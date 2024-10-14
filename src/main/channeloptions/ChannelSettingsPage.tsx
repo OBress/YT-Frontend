@@ -7,7 +7,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import JSONEditor from "./JsonEditor";
-import ChannelNavigator from "@/main/navigator";
 
 // Sample data for channels
 const channelData = [
@@ -69,8 +68,4 @@ export default function ChannelSettingsPage() {
       </CardContent>
     </Card>
   );
-}
-
-function App() {
-  return <ChannelNavigator />;
 }
