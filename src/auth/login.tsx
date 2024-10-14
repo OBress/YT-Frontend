@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,23 +14,52 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Lock, AlertCircle } from "lucide-react";
+import { Lock, AlertCircle, Sun, Moon } from "lucide-react";
 
 interface LoginPageProps {
   setIsLoggedIn: (value: boolean) => void;
 }
 
 export default function LoginPage({ setIsLoggedIn }: LoginPageProps) {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isDarkMode, setIsDarkMode] = useState(true);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    document.documentElement.classList.add("dark");
+  }, []);
+
+  const toggleDarkMode = () => {
+    setIsDarkMode(!isDarkMode);
+    document.documentElement.classList.toggle("dark");
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    if (email === "user@example.com" && password === "password") {
+    const users = [
+      {
+        name: import.meta.env.VITE_USER_1,
+        password: import.meta.env.VITE_USER_1_PASSWORD,
+      },
+      {
+        name: import.meta.env.VITE_USER_2,
+        password: import.meta.env.VITE_USER_2_PASSWORD,
+      },
+      {
+        name: import.meta.env.VITE_USER_3,
+        password: import.meta.env.VITE_USER_3_PASSWORD,
+      },
+    ];
+
+    const user = users.find(
+      (u) => u.name === username && u.password === password
+    );
+
+    if (user) {
       localStorage.setItem("isLoggedIn", "true");
       setIsLoggedIn(true);
       navigate("/channel-navigator");
@@ -40,24 +69,36 @@ export default function LoginPage({ setIsLoggedIn }: LoginPageProps) {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+      <Button
+        onClick={toggleDarkMode}
+        variant="outline"
+        size="icon"
+        className="absolute top-4 right-4"
+      >
+        {isDarkMode ? (
+          <Sun className="h-[1.2rem] w-[1.2rem]" />
+        ) : (
+          <Moon className="h-[1.2rem] w-[1.2rem]" />
+        )}
+      </Button>
       <Card className="w-[350px]">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl text-center">Login</CardTitle>
+          <CardTitle className="text-2xl text-center">Welcome</CardTitle>
           <CardDescription className="text-center">
-            Enter your email and password to access your account
+            Enter your email & password
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <form onSubmit={handleLogin}>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="username">Username</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="m@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="username"
+                type="text"
+                placeholder="Enter your username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 required
               />
             </div>
@@ -85,7 +126,9 @@ export default function LoginPage({ setIsLoggedIn }: LoginPageProps) {
         </CardContent>
         <CardFooter>
           <p className="text-sm text-center w-full text-muted-foreground">
-            Don&apos;t have an account? Contact your administrator.
+            Don&apos;t have an account?
+            <br />
+            You probably shouldn&apos;t be here.
           </p>
         </CardFooter>
       </Card>
