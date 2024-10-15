@@ -1,6 +1,7 @@
 import express from 'express';
 import { MongoClient, ServerApiVersion, ObjectId } from 'mongodb';
 import cors from 'cors';  // Add this import
+import dotenv from 'dotenv'; 
 
 const app = express();
 const port = 3001; // Choose a port for your server
@@ -8,7 +9,10 @@ const port = 3001; // Choose a port for your server
 // Enable CORS for all routes
 app.use(cors());  // Add this line
 
-const uri = 'mongodb+srv://Owen:m1jT6i7Dv6SIVe7L@cluster0.xvcs7.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+dotenv.config();
+
+const uri = process.env.VITE_MONGODB_URI;
+
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
