@@ -1,8 +1,8 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import AnalyticsPage from "./analytics/AnalyticsPage";
-import ChannelSettingsPage from "./channeloptions/ChannelSettingsPage";
-import MakerPage from "./maker/MakerPage";
+import ChannelSettingsPage from "./videosettings/VideoSettingsPage";
+import MakerPage from "./channelsettings/MakerPage";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sun, Moon, Settings } from "lucide-react";
@@ -10,9 +10,13 @@ import SettingsPopup from "./settings";
 
 interface ChannelNavigatorProps {
   onLogout: () => void;
+  userId: string | null;
 }
 
-const ChannelNavigator: React.FC<ChannelNavigatorProps> = ({ onLogout }) => {
+const ChannelNavigator: React.FC<ChannelNavigatorProps> = ({
+  onLogout,
+  userId,
+}) => {
   const navigate = useNavigate();
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [activeTab, setActiveTab] = useState("maker");
@@ -70,7 +74,7 @@ const ChannelNavigator: React.FC<ChannelNavigatorProps> = ({ onLogout }) => {
               variant={activeTab === "maker" ? "default" : "ghost"}
               className="text-base sm:text-lg py-2 px-4 sm:py-3 sm:px-6 flex-shrink-0"
             >
-              Maker
+              Channel Settings
             </Button>
             <Button
               onClick={() => setActiveTab("analytics")}
@@ -84,7 +88,7 @@ const ChannelNavigator: React.FC<ChannelNavigatorProps> = ({ onLogout }) => {
               variant={activeTab === "settings" ? "default" : "ghost"}
               className="text-base sm:text-lg py-2 px-4 sm:py-3 sm:px-6 flex-shrink-0"
             >
-              Channel Settings
+              Video Settings
             </Button>
           </div>
           <div className="hidden sm:flex items-center space-x-4">

@@ -44,14 +44,17 @@ export default function LoginPage({ setIsLoggedIn }: LoginPageProps) {
       {
         name: import.meta.env.VITE_USER_1,
         password: import.meta.env.VITE_USER_1_PASSWORD,
+        id: import.meta.env.VITE_USER_1_ID,
       },
       {
         name: import.meta.env.VITE_USER_2,
         password: import.meta.env.VITE_USER_2_PASSWORD,
+        id: import.meta.env.VITE_USER_2_ID,
       },
       {
         name: import.meta.env.VITE_USER_3,
         password: import.meta.env.VITE_USER_3_PASSWORD,
+        id: import.meta.env.VITE_USER_3_ID,
       },
     ];
 
@@ -61,6 +64,7 @@ export default function LoginPage({ setIsLoggedIn }: LoginPageProps) {
 
     if (user) {
       localStorage.setItem("isLoggedIn", "true");
+      localStorage.setItem("userId", user.id);
       setIsLoggedIn(true);
       navigate("/channel-navigator");
     } else {

@@ -12,17 +12,22 @@ import ChannelNavigator from "./main/navigator";
 
 export default function AuthWrapper() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loginStatus = localStorage.getItem("isLoggedIn");
+    const storedUserId = localStorage.getItem("userId");
     setIsLoggedIn(loginStatus === "true");
+    setUserId(storedUserId);
     setIsLoading(false);
   }, []);
 
   const handleLogout = () => {
     setIsLoggedIn(false);
-    localStorage.setItem("isLoggedIn", "false");
+    setUserId(null);
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("userId");
   };
 
   if (isLoading) {
@@ -46,7 +51,7 @@ export default function AuthWrapper() {
           path="/channel-navigator"
           element={
             isLoggedIn ? (
-              <ChannelNavigator onLogout={handleLogout} />
+              <ChannelNavigator onLogout={handleLogout} userId={userId} />
             ) : (
               <Navigate to="/login" />
             )

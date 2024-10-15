@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { ChevronRight, ChevronDown, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,11 +12,15 @@ type JSONArray = JSONValue[];
 export interface JSONEditorProps {
   data: JSONValue;
   onSave: (data: JSONValue) => void;
+  expandedPaths: Set<string>;
+  toggleExpanded: (path: (string | number)[]) => void;
 }
 
 export default function JSONEditor({
   data: initialData,
   onSave,
+  expandedPaths,
+  toggleExpanded,
 }: JSONEditorProps) {
   const [data, setData] = useState<JSONValue>(initialData);
 
@@ -30,6 +34,8 @@ export default function JSONEditor({
         data={data}
         onChange={(newData) => setData(newData)}
         path={[]}
+        expandedPaths={expandedPaths}
+        toggleExpanded={toggleExpanded}
       />
       <Button onClick={handleSave} className="w-full">
         <Save className="mr-2 h-4 w-4" /> Save Changes
@@ -42,10 +48,19 @@ interface JSONEditorNodeProps {
   data: JSONValue;
   onChange: (newData: JSONValue) => void;
   path: (string | number)[];
+  expandedPaths: Set<string>;
+  toggleExpanded: (path: (string | number)[]) => void;
 }
 
-function JSONEditorNode({ data, onChange, path }: JSONEditorNodeProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+function JSONEditorNode({
+  data,
+  onChange,
+  path,
+  expandedPaths,
+  toggleExpanded,
+}: JSONEditorNodeProps) {
+  const pathString = path.join(".");
+  const isExpanded = expandedPaths.has(pathString);
 
   if (typeof data === "object" && data !== null) {
     const isArray = Array.isArray(data);
@@ -54,52 +69,49 @@ function JSONEditorNode({ data, onChange, path }: JSONEditorNodeProps) {
       : Object.entries(data as JSONObject);
 
     return (
-      <div className="border rounded-md p-2 my-2">
+      <div className="my-2">
         <div
           className="flex items-center cursor-pointer"
-          onClick={() => setIsExpanded(!isExpanded)}
+          onClick={() => toggleExpanded(path)}
         >
           {isExpanded ? (
             <ChevronDown className="h-4 w-4 mr-2 transition-transform duration-200 ease-in-out" />
           ) : (
             <ChevronRight className="h-4 w-4 mr-2 transition-transform duration-200 ease-in-out" />
           )}
-          <span className="font-medium">
-            {isArray ? "Array" : "Object"} ({entries.length})
-          </span>
+          <span className="font-medium">{path[path.length - 1]}</span>
         </div>
-        <div
-          className={`ml-4 mt-2 overflow-hidden transition-all duration-200 ease-in-out ${
-            isExpanded ? "max-h-[1000px]" : "max-h-0"
-          }`}
-        >
-          {entries.map(([key, value], _) => (
-            <div key={key} className="my-1">
-              <span className="font-medium mr-2">{key}:</span>
-              <JSONEditorNode
-                data={value}
-                onChange={(newValue) => {
-                  const newData = isArray
-                    ? [...(data as JSONArray)]
-                    : { ...(data as JSONObject) };
-                  if (isArray) {
-                    (newData as JSONArray)[Number(key)] = newValue;
-                  } else {
-                    (newData as JSONObject)[key] = newValue;
-                  }
-                  onChange(newData);
-                }}
-                path={[...path, key]}
-              />
-            </div>
-          ))}
-        </div>
+        {isExpanded && (
+          <div className="ml-4 mt-2">
+            {entries.map(([key, value], index) => (
+              <div key={key} className="my-1">
+                <JSONEditorNode
+                  data={value}
+                  onChange={(newValue) => {
+                    const newData = isArray
+                      ? [...(data as JSONArray)]
+                      : { ...(data as JSONObject) };
+                    if (isArray) {
+                      (newData as JSONArray)[index] = newValue;
+                    } else {
+                      (newData as JSONObject)[key] = newValue;
+                    }
+                    onChange(newData);
+                  }}
+                  path={[...path, key]}
+                  expandedPaths={expandedPaths}
+                  toggleExpanded={toggleExpanded}
+                />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   } else {
     return (
       <Input
-        value={data as string}
+        value={data === null ? "" : String(data)}
         onChange={(e) => onChange(e.target.value)}
         className="mt-1"
       />
