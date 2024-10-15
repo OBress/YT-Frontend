@@ -1,7 +1,15 @@
 import express from 'express';
 import { MongoClient, ServerApiVersion, ObjectId } from 'mongodb';
 import cors from 'cors';  // Add this import
-import dotenv from 'dotenv'; 
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+dotenv.config({ path: `${__dirname}/../.env` });
+
 
 const app = express();
 const port = 3001; // Choose a port for your server
@@ -9,9 +17,11 @@ const port = 3001; // Choose a port for your server
 // Enable CORS for all routes
 app.use(cors());  // Add this line
 
-dotenv.config();
-
-const uri = process.env.VITE_MONGODB_URI;
+const uri = process.env.MONGODB_URI;
+if (!uri) {
+  console.error('MongoDB URI is not set. Please check your .env file.');
+  process.exit(1);
+}
 
 const client = new MongoClient(uri, {
   serverApi: {
