@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { ChevronRight, ChevronDown, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,7 @@ type JSONArray = JSONValue[];
 
 export interface JSONEditorProps {
   data: JSONValue;
-  onSave: (data: JSONValue) => void;
+  onSave: (data: JSONValue) => Promise<string | void>;
   expandedPaths: Set<string>;
   toggleExpanded: (path: (string | number)[]) => void;
   channelKey: string;
@@ -25,27 +25,74 @@ const JSONEditor: React.FC<JSONEditorProps> = ({
   channelKey,
 }) => {
   const [data, setData] = useState<JSONValue>(initialData);
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error" | "neutral";
+  } | null>(null);
 
-  const handleSave = () => {
-    onSave(data);
+  const handleSave = async () => {
+    try {
+      const result = await onSave(data);
+      if (result === "not_modified") {
+        setNotification({
+          message: "No changes to save",
+          type: "neutral",
+        });
+      } else {
+        setNotification({
+          message: "Changes saved successfully",
+          type: "success",
+        });
+      }
+    } catch (error) {
+      console.error("Save error:", error); // Add this line for debugging
+      setNotification({
+        message: `Failed to save changes: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+        type: "error",
+      });
+    }
   };
 
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => setNotification(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
   return (
-    <div className="w-full space-y-4">
-      <JSONEditorNode
-        data={data}
-        onChange={(newData) => setData(newData)}
-        path={[]}
-        expandedPaths={expandedPaths}
-        toggleExpanded={toggleExpanded}
-        isTopLevel={true}
-      />
-      <div className="flex justify-center">
-        <Button onClick={handleSave} className="w-auto px-6">
-          <Save className="mr-2 h-4 w-4" /> Save Changes
-        </Button>
+    <>
+      <div className="w-full space-y-4">
+        <JSONEditorNode
+          data={data}
+          onChange={(newData) => setData(newData)}
+          path={[]}
+          expandedPaths={expandedPaths}
+          toggleExpanded={toggleExpanded}
+          isTopLevel={true}
+        />
+        <div className="flex justify-center">
+          <Button onClick={handleSave} className="w-auto px-6">
+            <Save className="mr-2 h-4 w-4" /> Save Changes
+          </Button>
+        </div>
       </div>
-    </div>
+      {notification && (
+        <div
+          className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-md bg-background border shadow-lg animate-fade-in-out ${
+            notification.type === "success"
+              ? "text-green-500"
+              : notification.type === "error"
+              ? "text-red-500"
+              : "text-gray-500"
+          }`}
+        >
+          {notification.message}
+        </div>
+      )}
+    </>
   );
 };
 
@@ -80,12 +127,6 @@ function JSONEditorNode({
       ? Object.entries(data)
       : Object.entries(data as JSONObject);
 
-    if (isChannel && "video-settings" in data) {
-      entries = Object.entries(
-        (data as JSONObject)["video-settings"] as JSONObject
-      );
-    }
-
     return (
       <div className={`my-2 ${isTopLevel ? "" : "ml-8"}`}>
         {!isRoot && (
@@ -111,23 +152,11 @@ function JSONEditorNode({
                     const newData = isArray
                       ? [...(data as JSONArray)]
                       : { ...(data as JSONObject) };
-                    if (isChannel) {
-                      (newData as JSONObject)["video-settings"] = {
-                        ...((newData as JSONObject)[
-                          "video-settings"
-                        ] as JSONObject),
-                        [key]: newValue,
-                      };
-                    } else {
-                      (newData as JSONObject)[key] = newValue;
-                    }
+                    // Update the entire channel data
+                    (newData as JSONObject)[key] = newValue;
                     onChange(newData);
                   }}
-                  path={
-                    isChannel
-                      ? [...path, "video-settings", key]
-                      : [...path, key]
-                  }
+                  path={[...path, key]}
                   expandedPaths={expandedPaths}
                   toggleExpanded={toggleExpanded}
                 />

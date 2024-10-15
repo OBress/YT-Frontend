@@ -45,3 +45,44 @@ export async function getChannelSettingsByUserId(req, res) {
     res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 }
+
+export async function updateChannelSettings(req, res) {
+  try {
+    const userId = req.params.userId;
+    const { channelKey, newSettings } = req.body;
+    const database = client.db('YouTube-Dashboard');
+    const collection = database.collection('everything');
+
+    // Log the update operation for debugging
+    console.log('Update operation:', {
+      userId,
+      channelKey,
+      newSettings
+    });
+
+    const result = await collection.updateOne(
+      { [userId]: { $exists: true } },
+      { $set: { [`${userId}.channels.${channelKey}`]: newSettings } }
+    );
+
+    // Log the result of the update operation
+    console.log('Update result:', result);
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: 'User or channel not found' });
+    }
+
+    if (result.modifiedCount === 0) {
+      return res.status(304).json({ message: 'not_modified' });
+    }
+
+    // Fetch the updated document to confirm changes
+    const updatedDoc = await collection.findOne({ [userId]: { $exists: true } });
+    console.log('Updated document:', updatedDoc);
+
+    res.json({ message: 'Channel settings updated successfully', updatedSettings: updatedDoc });
+  } catch (error) {
+    console.error('Error in updateChannelSettings:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+}

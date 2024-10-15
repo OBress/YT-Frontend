@@ -86,7 +86,7 @@ export default function LoginPage({ setIsLoggedIn }: LoginPageProps) {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl text-center">Welcome</CardTitle>
           <CardDescription className="text-center">
-            Enter your email & password
+            Enter your username & password
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

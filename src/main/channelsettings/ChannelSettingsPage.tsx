@@ -8,23 +8,11 @@ import {
 } from "@/components/ui/card";
 import JSONEditor from "./JsonEditor";
 import { ChevronRight, ChevronDown } from "lucide-react";
-
-// Update the Channel type to match the structure
-type Channel = {
-  channels: {
-    [key: string]: {
-      "channel-settings": {
-        "upload-time": string;
-      };
-      "video-settings": {
-        text: { length: number };
-        audio: { voiceid: string };
-        video: { subtitles: boolean };
-        thumbnail: { create: boolean };
-      };
-    };
-  };
-};
+import {
+  Channel,
+  sanitizeSettings,
+  fetchChannelSettings,
+} from "./channelSettingsUtils";
 
 export default function ChannelSettingsPage() {
   const [channel, setChannel] = useState<Channel | null>(null);
@@ -39,71 +27,83 @@ export default function ChannelSettingsPage() {
   useEffect(() => {
     const userId = localStorage.getItem("userId");
     if (userId) {
-      fetchChannelSettings(userId);
+      fetchChannelSettings(userId)
+        .then((data) => {
+          if (Object.keys(data.channels).length === 0) {
+            setError("No channels found. Please set up your channel first.");
+            return;
+          }
+          setChannel(data);
+          setError(null);
+        })
+        .catch((error) => {
+          console.error("Error fetching channel settings:", error);
+          setError(error.message || "An unknown error occurred");
+        });
     } else {
       setError("User ID not found in local storage. Please log in again.");
     }
   }, []);
 
-  const fetchChannelSettings = async (userId: string) => {
+  const handleSaveSettings = async (channelKey: string, newSettings: any) => {
     try {
+      const userId = localStorage.getItem("userId");
       const token = localStorage.getItem("token");
+      if (!userId || !token) {
+        throw new Error("User ID or token not found");
+      }
+
       const response = await fetch(
         `http://localhost:3001/api/channel-settings/${userId}`,
         {
+          method: "PUT",
           headers: {
+            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
+          body: JSON.stringify({
+            channelKey,
+            newSettings,
+          }),
         }
       );
+
+      if (response.status === 304) {
+        console.log("No changes to save");
+        return "not_modified";
+      }
+
       if (!response.ok) {
-        if (response.status === 404) {
-          setError(
-            "Channel settings not found. Please set up your channel first."
-          );
-          return;
-        }
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(
+          `Failed to update channel settings: ${response.status} ${response.statusText}. ${errorText}`
+        );
       }
-      const data: Channel = await response.json();
-      if (Object.keys(data.channels).length === 0) {
-        setError("No channels found. Please set up your channel first.");
-        return;
-      }
-      setChannel(data);
-      setError(null);
-    } catch (error) {
-      console.error("Error fetching channel settings:", error);
-      setError(
-        error instanceof Error ? error.message : "An unknown error occurred"
-      );
-    }
-  };
 
-  const handleSaveSettings = async (channelKey: string, newSettings: any) => {
-    setChannel((prevChannel) => {
-      if (!prevChannel) return null;
-      return {
-        ...prevChannel,
-        channels: {
-          ...prevChannel.channels,
-          [channelKey]: {
-            ...prevChannel.channels[channelKey],
-            "video-settings": newSettings,
+      setChannel((prevChannel) => {
+        if (!prevChannel) return null;
+        return {
+          ...prevChannel,
+          channels: {
+            ...prevChannel.channels,
+            [channelKey]: newSettings,
           },
-        },
-      };
-    });
-  };
+        };
+      });
 
-  // Add this function to sanitize the settings
-  const sanitizeSettings = (
-    settings: Record<string, any>
-  ): Record<string, any> => {
-    return Object.entries(settings).reduce((acc, [key, value]) => {
-      acc[key] = value === null ? "" : value;
-      return acc;
-    }, {} as Record<string, any>);
+      console.log("Channel settings updated successfully");
+      return "modified";
+    } catch (error) {
+      console.error("Error updating channel settings:", error);
+      let errorMessage = "An error occurred while updating channel settings";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === "string") {
+        errorMessage = error;
+      }
+      setError(errorMessage);
+      throw error;
+    }
   };
 
   const toggleJsonExpanded = (
@@ -138,9 +138,9 @@ export default function ChannelSettingsPage() {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="text-3xl">Video Settings</CardTitle>
+        <CardTitle className="text-3xl">Settings</CardTitle>
         <CardDescription className="text-lg">
-          Manage video settings for the channel
+          Manage channel settings
         </CardDescription>
       </CardHeader>
       <CardContent className="w-full max-w-7xl mx-auto">
@@ -173,7 +173,7 @@ export default function ChannelSettingsPage() {
                     {expandedChannels.has(channelKey) && (
                       <div className="border rounded-xl p-4">
                         <JSONEditor
-                          data={sanitizeSettings(channelData["video-settings"])}
+                          data={sanitizeSettings(channelData)}
                           onSave={(newSettings) =>
                             handleSaveSettings(channelKey, newSettings)
                           }

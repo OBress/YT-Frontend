@@ -1,8 +1,8 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import AnalyticsPage from "./analytics/AnalyticsPage";
-import ChannelSettingsPage from "./videosettings/VideoSettingsPage";
-import MakerPage from "./channelsettings/MakerPage";
+import ChannelSettingsPage from "./channelsettings/ChannelSettingsPage";
+import MakerPage from "./maker/MakerPage";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sun, Moon, Settings } from "lucide-react";
@@ -77,7 +77,7 @@ const ChannelNavigator: React.FC<ChannelNavigatorProps> = ({
               variant={activeTab === "maker" ? "default" : "ghost"}
               className="text-base sm:text-lg py-2 px-4 sm:py-3 sm:px-6 flex-shrink-0"
             >
-              Channel Settings
+              Maker
             </Button>
             <Button
               onClick={() => setActiveTab("analytics")}
@@ -91,7 +91,7 @@ const ChannelNavigator: React.FC<ChannelNavigatorProps> = ({
               variant={activeTab === "settings" ? "default" : "ghost"}
               className="text-base sm:text-lg py-2 px-4 sm:py-3 sm:px-6 flex-shrink-0"
             >
-              Video Settings
+              Channel Settings
             </Button>
           </div>
           <div className="hidden sm:flex items-center space-x-4">
