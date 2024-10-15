@@ -14,14 +14,16 @@ export interface JSONEditorProps {
   onSave: (data: JSONValue) => void;
   expandedPaths: Set<string>;
   toggleExpanded: (path: (string | number)[]) => void;
+  channelKey: string;
 }
 
-export default function JSONEditor({
+const JSONEditor: React.FC<JSONEditorProps> = ({
   data: initialData,
   onSave,
   expandedPaths,
   toggleExpanded,
-}: JSONEditorProps) {
+  channelKey,
+}) => {
   const [data, setData] = useState<JSONValue>(initialData);
 
   const handleSave = () => {
@@ -29,20 +31,23 @@ export default function JSONEditor({
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-4">
+    <div className="w-full space-y-4">
       <JSONEditorNode
         data={data}
         onChange={(newData) => setData(newData)}
         path={[]}
         expandedPaths={expandedPaths}
         toggleExpanded={toggleExpanded}
+        isTopLevel={true}
       />
-      <Button onClick={handleSave} className="w-full">
-        <Save className="mr-2 h-4 w-4" /> Save Changes
-      </Button>
+      <div className="flex justify-center">
+        <Button onClick={handleSave} className="w-auto px-6">
+          <Save className="mr-2 h-4 w-4" /> Save Changes
+        </Button>
+      </div>
     </div>
   );
-}
+};
 
 interface JSONEditorNodeProps {
   data: JSONValue;
@@ -50,6 +55,7 @@ interface JSONEditorNodeProps {
   path: (string | number)[];
   expandedPaths: Set<string>;
   toggleExpanded: (path: (string | number)[]) => void;
+  isTopLevel?: boolean;
 }
 
 function JSONEditorNode({
@@ -58,32 +64,46 @@ function JSONEditorNode({
   path,
   expandedPaths,
   toggleExpanded,
+  isTopLevel = false,
 }: JSONEditorNodeProps) {
   const pathString = path.join(".");
   const isExpanded = expandedPaths.has(pathString);
+  const isRoot = path.length === 0;
+  const isChannel =
+    path.length === 1 &&
+    typeof path[0] === "string" &&
+    path[0].startsWith("channel");
 
   if (typeof data === "object" && data !== null) {
     const isArray = Array.isArray(data);
-    const entries = isArray
+    let entries = isArray
       ? Object.entries(data)
       : Object.entries(data as JSONObject);
 
+    if (isChannel && "video-settings" in data) {
+      entries = Object.entries(
+        (data as JSONObject)["video-settings"] as JSONObject
+      );
+    }
+
     return (
-      <div className="my-2">
-        <div
-          className="flex items-center cursor-pointer"
-          onClick={() => toggleExpanded(path)}
-        >
-          {isExpanded ? (
-            <ChevronDown className="h-4 w-4 mr-2 transition-transform duration-200 ease-in-out" />
-          ) : (
-            <ChevronRight className="h-4 w-4 mr-2 transition-transform duration-200 ease-in-out" />
-          )}
-          <span className="font-medium">{path[path.length - 1]}</span>
-        </div>
-        {isExpanded && (
-          <div className="ml-4 mt-2">
-            {entries.map(([key, value], index) => (
+      <div className={`my-2 ${isTopLevel ? "" : "ml-8"}`}>
+        {!isRoot && (
+          <div
+            className="flex items-center cursor-pointer"
+            onClick={() => toggleExpanded(path)}
+          >
+            {isExpanded ? (
+              <ChevronDown className="h-4 w-4 mr-2 transition-transform duration-200 ease-in-out" />
+            ) : (
+              <ChevronRight className="h-4 w-4 mr-2 transition-transform duration-200 ease-in-out" />
+            )}
+            <span className="font-medium">{path[path.length - 1]}</span>
+          </div>
+        )}
+        {(isExpanded || isRoot) && (
+          <div className={`${isRoot ? "" : "ml-8 mt-2"}`}>
+            {entries.map(([key, value]) => (
               <div key={key} className="my-1">
                 <JSONEditorNode
                   data={value}
@@ -91,14 +111,23 @@ function JSONEditorNode({
                     const newData = isArray
                       ? [...(data as JSONArray)]
                       : { ...(data as JSONObject) };
-                    if (isArray) {
-                      (newData as JSONArray)[index] = newValue;
+                    if (isChannel) {
+                      (newData as JSONObject)["video-settings"] = {
+                        ...((newData as JSONObject)[
+                          "video-settings"
+                        ] as JSONObject),
+                        [key]: newValue,
+                      };
                     } else {
                       (newData as JSONObject)[key] = newValue;
                     }
                     onChange(newData);
                   }}
-                  path={[...path, key]}
+                  path={
+                    isChannel
+                      ? [...path, "video-settings", key]
+                      : [...path, key]
+                  }
                   expandedPaths={expandedPaths}
                   toggleExpanded={toggleExpanded}
                 />
@@ -110,11 +139,18 @@ function JSONEditorNode({
     );
   } else {
     return (
-      <Input
-        value={data === null ? "" : String(data)}
-        onChange={(e) => onChange(e.target.value)}
-        className="mt-1"
-      />
+      <div className="flex items-center mt-1 ml-8">
+        <span className="font-medium mr-2 min-w-[100px]">
+          {path[path.length - 1]}:
+        </span>
+        <Input
+          value={data === null ? "" : String(data)}
+          onChange={(e) => onChange(e.target.value)}
+          className="flex-grow"
+        />
+      </div>
     );
   }
 }
+
+export default JSONEditor;

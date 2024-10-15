@@ -28,6 +28,9 @@ const ChannelNavigator: React.FC<ChannelNavigatorProps> = ({
   }, []);
 
   const handleLogout = () => {
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("token");
     onLogout();
     navigate("/login");
   };

@@ -40,35 +40,31 @@ export default function LoginPage({ setIsLoggedIn }: LoginPageProps) {
     e.preventDefault();
     setError("");
 
-    const users = [
-      {
-        name: import.meta.env.VITE_USER_1,
-        password: import.meta.env.VITE_USER_1_PASSWORD,
-        id: import.meta.env.VITE_USER_1_ID,
-      },
-      {
-        name: import.meta.env.VITE_USER_2,
-        password: import.meta.env.VITE_USER_2_PASSWORD,
-        id: import.meta.env.VITE_USER_2_ID,
-      },
-      {
-        name: import.meta.env.VITE_USER_3,
-        password: import.meta.env.VITE_USER_3_PASSWORD,
-        id: import.meta.env.VITE_USER_3_ID,
-      },
-    ];
+    try {
+      const response = await fetch("http://localhost:3001/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, password }),
+      });
 
-    const user = users.find(
-      (u) => u.name === username && u.password === password
-    );
+      if (!response.ok) {
+        throw new Error("Invalid username or password");
+      }
 
-    if (user) {
+      const data = await response.json();
       localStorage.setItem("isLoggedIn", "true");
-      localStorage.setItem("userId", user.id);
+      localStorage.setItem("userId", data.userId);
+      localStorage.setItem("token", data.token);
       setIsLoggedIn(true);
       navigate("/channel-navigator");
-    } else {
-      setError("Invalid email or password");
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "An error occurred during login"
+      );
     }
   };
 

@@ -28,10 +28,13 @@ type Channel = {
 
 export default function ChannelSettingsPage() {
   const [channel, setChannel] = useState<Channel | null>(null);
-  const [expandedJsonPaths, setExpandedJsonPaths] = useState<Set<string>>(
+  const [expandedJsonPaths, setExpandedJsonPaths] = useState<
+    Record<string, Set<string>>
+  >({});
+  const [error, setError] = useState<string | null>(null);
+  const [expandedChannels, setExpandedChannels] = useState<Set<string>>(
     new Set()
   );
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const userId = localStorage.getItem("userId");
@@ -44,8 +47,14 @@ export default function ChannelSettingsPage() {
 
   const fetchChannelSettings = async (userId: string) => {
     try {
+      const token = localStorage.getItem("token");
       const response = await fetch(
-        `http://localhost:3001/api/channel-settings/${userId}`
+        `http://localhost:3001/api/channel-settings/${userId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
       if (!response.ok) {
         if (response.status === 404) {
@@ -72,8 +81,6 @@ export default function ChannelSettingsPage() {
   };
 
   const handleSaveSettings = async (channelKey: string, newSettings: any) => {
-    // Implement the logic to save updated settings to MongoDB
-    // This is just a placeholder for now
     setChannel((prevChannel) => {
       if (!prevChannel) return null;
       return {
@@ -81,8 +88,8 @@ export default function ChannelSettingsPage() {
         channels: {
           ...prevChannel.channels,
           [channelKey]: {
-            "channel-settings": newSettings["channel-settings"],
-            "video-settings": newSettings["video-settings"],
+            ...prevChannel.channels[channelKey],
+            "video-settings": newSettings,
           },
         },
       };
@@ -99,14 +106,30 @@ export default function ChannelSettingsPage() {
     }, {} as Record<string, any>);
   };
 
-  const toggleJsonExpanded = (path: (string | number)[]) => {
+  const toggleJsonExpanded = (
+    channelKey: string,
+    path: (string | number)[]
+  ) => {
     const pathString = path.join(".");
     setExpandedJsonPaths((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(pathString)) {
-        newSet.delete(pathString);
+      const channelPaths = prev[channelKey] || new Set();
+      const newChannelPaths = new Set(channelPaths);
+      if (newChannelPaths.has(pathString)) {
+        newChannelPaths.delete(pathString);
       } else {
-        newSet.add(pathString);
+        newChannelPaths.add(pathString);
+      }
+      return { ...prev, [channelKey]: newChannelPaths };
+    });
+  };
+
+  const toggleChannelExpanded = (channelKey: string) => {
+    setExpandedChannels((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(channelKey)) {
+        newSet.delete(channelKey);
+      } else {
+        newSet.add(channelKey);
       }
       return newSet;
     });
@@ -120,7 +143,7 @@ export default function ChannelSettingsPage() {
           Manage video settings for the channel
         </CardDescription>
       </CardHeader>
-      <CardContent className="w-full max-w-6xl mx-auto">
+      <CardContent className="w-full max-w-7xl mx-auto">
         {error && (
           <div className="text-red-500 mb-4 p-4 bg-red-100 rounded">
             {error}
@@ -133,21 +156,42 @@ export default function ChannelSettingsPage() {
         )}
         {channel && Object.keys(channel.channels).length > 0
           ? Object.entries(channel.channels).map(
-              ([channelKey, channelData]) => (
-                <div key={channelKey} className="mb-12">
-                  <h3 className="text-2xl font-semibold mb-4">{channelKey}</h3>
-                  <JSONEditor
-                    data={sanitizeSettings({
-                      "channel-settings": channelData["channel-settings"],
-                      "video-settings": channelData["video-settings"],
-                    })}
-                    onSave={(newSettings) =>
-                      handleSaveSettings(channelKey, newSettings)
-                    }
-                    expandedPaths={expandedJsonPaths}
-                    toggleExpanded={toggleJsonExpanded}
-                  />
-                </div>
+              ([channelKey, channelData], index, array) => (
+                <React.Fragment key={channelKey}>
+                  <div className="mb-6">
+                    <div
+                      className="flex items-center cursor-pointer mb-2"
+                      onClick={() => toggleChannelExpanded(channelKey)}
+                    >
+                      {expandedChannels.has(channelKey) ? (
+                        <ChevronDown className="h-5 w-5 mr-2" />
+                      ) : (
+                        <ChevronRight className="h-5 w-5 mr-2" />
+                      )}
+                      <h3 className="text-2xl font-semibold">{channelKey}</h3>
+                    </div>
+                    {expandedChannels.has(channelKey) && (
+                      <div className="border rounded-xl p-4">
+                        <JSONEditor
+                          data={sanitizeSettings(channelData["video-settings"])}
+                          onSave={(newSettings) =>
+                            handleSaveSettings(channelKey, newSettings)
+                          }
+                          expandedPaths={
+                            expandedJsonPaths[channelKey] || new Set()
+                          }
+                          toggleExpanded={(path) =>
+                            toggleJsonExpanded(channelKey, path)
+                          }
+                          channelKey={channelKey}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  {index < array.length - 1 && (
+                    <hr className="my-6 border-t border-gray-300" />
+                  )}
+                </React.Fragment>
               )
             )
           : !error && (
