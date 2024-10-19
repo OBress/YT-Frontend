@@ -111,9 +111,35 @@ const ChannelNavigator: React.FC<ChannelNavigatorProps> = ({
             <div ref={settingsRef}>
               <SettingsPopup
                 onClose={() => setIsSettingsOpen(false)}
-                onSave={() => {
-                  // Add your save logic here
-                  setIsSettingsOpen(false);
+                onSave={async (updatedTokens) => {
+                  const userId = localStorage.getItem("userId");
+                  const token = localStorage.getItem("token");
+                  if (!userId || !token) {
+                    console.error("User ID or token not found");
+                    return;
+                  }
+
+                  try {
+                    const response = await fetch(
+                      `http://localhost:3001/api/user-settings/${userId}`,
+                      {
+                        method: "PUT",
+                        headers: {
+                          "Content-Type": "application/json",
+                          Authorization: `Bearer ${token}`,
+                        },
+                        body: JSON.stringify({ settings: updatedTokens }),
+                      }
+                    );
+
+                    if (!response.ok) {
+                      throw new Error("Failed to update user settings");
+                    }
+
+                    setIsSettingsOpen(false);
+                  } catch (error) {
+                    console.error("Error updating user settings:", error);
+                  }
                 }}
               />
             </div>

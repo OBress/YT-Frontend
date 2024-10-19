@@ -90,3 +90,8 @@
 *::-webkit-scrollbar-thumb:active {
   background-color: hsl(var(--foreground));
 }
+
+.text-security-disc {
+  -webkit-text-security: disc;
+  text-security: disc;
+}
