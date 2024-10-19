@@ -111,7 +111,9 @@ const ChannelNavigator: React.FC<ChannelNavigatorProps> = ({
             <div ref={settingsRef}>
               <SettingsPopup
                 onClose={() => setIsSettingsOpen(false)}
-                onSave={async (updatedTokens) => {
+                onUpdateSettings={async (
+                  updatedTokens: Record<string, string>
+                ) => {
                   const userId = localStorage.getItem("userId");
                   const token = localStorage.getItem("token");
                   if (!userId || !token) {

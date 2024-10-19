@@ -12,7 +12,7 @@ export async function getUserSettings(req, res) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const userSettings = userDocument[userId].settings;
+    const userSettings = userDocument[userId]['user-settings'];
 
     if (!userSettings) {
       return res.status(404).json({ error: 'User settings not found' });
@@ -34,7 +34,7 @@ export async function updateUserSettings(req, res) {
 
     const result = await collection.updateOne(
       { [userId]: { $exists: true } },
-      { $set: { [`${userId}.settings`]: newSettings } }
+      { $set: { [`${userId}.user-settings`]: newSettings } }
     );
 
     if (result.matchedCount === 0) {

@@ -5,9 +5,13 @@ import { Eye, EyeOff, Save } from "lucide-react";
 
 interface SettingsPopupProps {
   onClose: () => void;
+  onUpdateSettings: (updatedTokens: Record<string, string>) => Promise<void>;
 }
 
-const SettingsPopup: React.FC<SettingsPopupProps> = ({ onClose }) => {
+const SettingsPopup: React.FC<SettingsPopupProps> = ({
+  onClose,
+  onUpdateSettings,
+}) => {
   const [tokens, setTokens] = useState<Record<string, string>>({});
   const [visibleTokens, setVisibleTokens] = useState<Record<string, boolean>>(
     {}
