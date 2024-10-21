@@ -6,6 +6,13 @@ import MakerPage from "./maker/MakerPage";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sun, Moon, Settings } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import SettingsPopup from "./settings";
 
 interface ChannelNavigatorProps {
@@ -107,8 +114,14 @@ const ChannelNavigator: React.FC<ChannelNavigatorProps> = ({
           {activeTab === "maker" && <MakerPage />}
           {activeTab === "analytics" && <AnalyticsPage />}
           {activeTab === "settings" && <ChannelSettingsPage />}
-          {isSettingsOpen && (
-            <div ref={settingsRef}>
+          <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+            <DialogContent className="sm:max-w-[425px] bg-white dark:bg-gray-800">
+              <DialogHeader>
+                <DialogTitle>Settings</DialogTitle>
+                <DialogDescription>
+                  Manage your API tokens and other settings here.
+                </DialogDescription>
+              </DialogHeader>
               <SettingsPopup
                 onClose={() => setIsSettingsOpen(false)}
                 onUpdateSettings={async (
@@ -144,8 +157,8 @@ const ChannelNavigator: React.FC<ChannelNavigatorProps> = ({
                   }
                 }}
               />
-            </div>
-          )}
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </div>

@@ -8,4 +8,3 @@ router.get('/:userId', authenticateToken, getUserSettings);
 router.put('/:userId', authenticateToken, updateUserSettings);
 
 export default router;
-

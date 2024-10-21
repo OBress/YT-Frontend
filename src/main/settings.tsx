@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from "react";
+import ReactDOM from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Eye, EyeOff, Save } from "lucide-react";
+import { DialogFooter, DialogContent } from "@/components/ui/dialog";
+import {
+  sanitizeSettings,
+  fetchUserSettings,
+} from "./channelsettings/channelSettingsUtils";
 
 interface SettingsPopupProps {
   onClose: () => void;
   onUpdateSettings: (updatedTokens: Record<string, string>) => Promise<void>;
 }
 
-const SettingsPopup: React.FC<SettingsPopupProps> = ({
-  onClose,
-  onUpdateSettings,
-}) => {
+const SettingsPopup: React.FC<SettingsPopupProps> = () => {
   const [tokens, setTokens] = useState<Record<string, string>>({});
   const [visibleTokens, setVisibleTokens] = useState<Record<string, boolean>>(
     {}
@@ -26,30 +29,31 @@ const SettingsPopup: React.FC<SettingsPopupProps> = ({
     const fetchSettings = async () => {
       const userId = localStorage.getItem("userId");
       const token = localStorage.getItem("token");
+      // console.log("UserId:", userId, "Token:", token);
       if (!userId || !token) {
         console.error("User ID or token not found");
         return;
       }
 
       try {
-        const response = await fetch(
-          `http://localhost:3001/api/user-settings/${userId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch user settings");
+        const userSettings = await fetchUserSettings(userId);
+        // console.log("Fetched user settings:", userSettings);
+        if (Object.keys(userSettings).length === 0) {
+          setNotification({
+            message: "No user settings found. Using default settings.",
+            type: "neutral",
+          });
+        } else {
+          const sanitizedSettings = sanitizeSettings(userSettings);
+          // console.log("Sanitized settings:", sanitizedSettings);
+          setTokens(sanitizedSettings);
         }
-
-        const data = await response.json();
-        setTokens(data.settings || {});
       } catch (error) {
         console.error("Error fetching user settings:", error);
-        alert("Failed to fetch user settings");
+        setNotification({
+          message: "Failed to fetch user settings. Using default settings.",
+          type: "error",
+        });
       }
     };
 
@@ -135,22 +139,9 @@ const SettingsPopup: React.FC<SettingsPopupProps> = ({
   }, [notification]);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full">
+    <>
+      <DialogContent>
         <h2 className="text-2xl font-bold mb-4">Settings</h2>
-        {notification && (
-          <div
-            className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-md bg-background border shadow-lg animate-fade-in-out ${
-              notification.type === "success"
-                ? "text-green-500"
-                : notification.type === "error"
-                ? "text-red-500"
-                : "text-gray-500"
-            }`}
-          >
-            {notification.message}
-          </div>
-        )}
         <div className="space-y-4">
           {Object.entries(tokens).map(([key, value]) => (
             <div key={key} className="flex items-center space-x-4">
@@ -188,17 +179,36 @@ const SettingsPopup: React.FC<SettingsPopupProps> = ({
             </div>
           ))}
         </div>
-        <div className="flex space-x-4 mt-6">
-          <Button onClick={handleSave} className="flex-1" disabled={isLoading}>
+        <DialogFooter>
+          <Button onClick={handleSave} className="w-full" disabled={isLoading}>
             <Save className="mr-2 h-4 w-4" />
             {isLoading ? "Saving..." : "Save Changes"}
           </Button>
-          <Button onClick={onClose} className="flex-1" disabled={isLoading}>
-            Close
-          </Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+      {notification &&
+        ReactDOM.createPortal(
+          <div
+            className={`fixed left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-md bg-background border shadow-lg animate-fade-in-out ${
+              notification.type === "success"
+                ? "text-green-500"
+                : notification.type === "error"
+                ? "text-red-500"
+                : "text-gray-500"
+            }`}
+            style={{
+              position: "fixed",
+              bottom: "20px",
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 9999999, // Very high z-index
+            }}
+          >
+            {notification.message}
+          </div>,
+          document.body
+        )}
+    </>
   );
 };
 

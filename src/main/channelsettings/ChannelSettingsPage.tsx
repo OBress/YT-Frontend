@@ -7,12 +7,23 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import JSONEditor from "./JsonEditor";
-import { ChevronRight, ChevronDown } from "lucide-react";
+import { ChevronRight, ChevronDown, X } from "lucide-react";
 import {
   Channel,
   sanitizeSettings,
   fetchChannelSettings,
 } from "./channelSettingsUtils";
+import { ChannelAdder } from "./ChannelAdder";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 export default function ChannelSettingsPage() {
   const [channel, setChannel] = useState<Channel | null>(null);
@@ -23,6 +34,17 @@ export default function ChannelSettingsPage() {
   const [expandedChannels, setExpandedChannels] = useState<Set<string>>(
     new Set()
   );
+  const [showAddChannelModal, setShowAddChannelModal] = useState(false);
+  const [newChannelName, setNewChannelName] = useState("");
+  const [deleteChannelKey, setDeleteChannelKey] = useState<string | null>(null);
+  const [deleteChannelInput, setDeleteChannelInput] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
+  const [channelsUpdated, setChannelsUpdated] = useState(0);
+
+  useEffect(() => {
+    const storedUserId = localStorage.getItem("userId");
+    setUserId(storedUserId);
+  }, []);
 
   useEffect(() => {
     const userId = localStorage.getItem("userId");
@@ -92,6 +114,7 @@ export default function ChannelSettingsPage() {
       });
 
       console.log("Channel settings updated successfully");
+      setChannelsUpdated((prev) => prev + 1); // Increment channelsUpdated
       return "modified";
     } catch (error) {
       console.error("Error updating channel settings:", error);
@@ -135,13 +158,85 @@ export default function ChannelSettingsPage() {
     });
   };
 
+  const handleAddChannel = (newChannelData: any) => {
+    setChannel((prevChannel) => {
+      if (!prevChannel) return null;
+      return {
+        ...prevChannel,
+        channels: {
+          ...prevChannel.channels,
+          [newChannelData.id]: newChannelData,
+        },
+      };
+    });
+    setChannelsUpdated((prev) => prev + 1); // Increment channelsUpdated
+  };
+
+  const handleDeleteChannel = async () => {
+    if (!deleteChannelKey || deleteChannelInput !== deleteChannelKey) {
+      return;
+    }
+
+    try {
+      const userId = localStorage.getItem("userId");
+      const token = localStorage.getItem("token");
+      if (!userId || !token) {
+        throw new Error("User ID or token not found");
+      }
+
+      const response = await fetch(
+        `http://localhost:3001/api/channel-settings/${userId}/${deleteChannelKey}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to delete channel: ${response.status} ${response.statusText}`
+        );
+      }
+
+      setChannel((prevChannel) => {
+        if (!prevChannel) return null;
+        const { [deleteChannelKey]: _, ...remainingChannels } =
+          prevChannel.channels;
+        return { ...prevChannel, channels: remainingChannels };
+      });
+
+      setDeleteChannelKey(null);
+      setDeleteChannelInput("");
+      setChannelsUpdated((prev) => prev + 1); // Increment channelsUpdated
+    } catch (error) {
+      console.error("Error deleting channel:", error);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "An error occurred while deleting the channel"
+      );
+    }
+  };
+
   return (
     <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="text-3xl">Settings</CardTitle>
-        <CardDescription className="text-lg">
-          Manage channel settings
-        </CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle className="text-3xl">Settings</CardTitle>
+          <CardDescription className="text-lg">
+            Manage channel settings
+          </CardDescription>
+        </div>
+        {userId && (
+          <ChannelAdder
+            onAddChannel={handleAddChannel}
+            userId={userId}
+            handleSaveSettings={handleSaveSettings}
+            channelsUpdated={channelsUpdated}
+          />
+        )}
       </CardHeader>
       <CardContent className="w-full max-w-7xl mx-auto">
         {error && (
@@ -159,16 +254,25 @@ export default function ChannelSettingsPage() {
               ([channelKey, channelData], index, array) => (
                 <React.Fragment key={channelKey}>
                   <div className="mb-6">
-                    <div
-                      className="flex items-center cursor-pointer mb-2"
-                      onClick={() => toggleChannelExpanded(channelKey)}
-                    >
-                      {expandedChannels.has(channelKey) ? (
-                        <ChevronDown className="h-5 w-5 mr-2" />
-                      ) : (
-                        <ChevronRight className="h-5 w-5 mr-2" />
-                      )}
-                      <h3 className="text-2xl font-semibold">{channelKey}</h3>
+                    <div className="flex items-center justify-between mb-2">
+                      <div
+                        className="flex items-center cursor-pointer"
+                        onClick={() => toggleChannelExpanded(channelKey)}
+                      >
+                        {expandedChannels.has(channelKey) ? (
+                          <ChevronDown className="h-5 w-5 mr-2" />
+                        ) : (
+                          <ChevronRight className="h-5 w-5 mr-2" />
+                        )}
+                        <h3 className="text-2xl font-semibold">{channelKey}</h3>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setDeleteChannelKey(channelKey)}
+                      >
+                        <X className="h-5 w-5" />
+                      </Button>
                     </div>
                     {expandedChannels.has(channelKey) && (
                       <div className="border rounded-xl p-4">
@@ -198,6 +302,38 @@ export default function ChannelSettingsPage() {
               <p>No channel data available. Please set up your channel.</p>
             )}
       </CardContent>
+      <Dialog
+        open={deleteChannelKey !== null}
+        onOpenChange={() => setDeleteChannelKey(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Channel</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete the channel "{deleteChannelKey}"?
+              This action cannot be undone. To confirm, please enter the channel
+              name below.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={deleteChannelInput}
+            onChange={(e) => setDeleteChannelInput(e.target.value)}
+            placeholder="Enter channel name to confirm"
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteChannelKey(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteChannel}
+              disabled={deleteChannelInput !== deleteChannelKey}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

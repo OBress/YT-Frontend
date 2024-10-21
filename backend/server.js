@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { connectToDatabase } from './config/database.js';
 import authRoutes from './routes/authRoutes.js';
-import channelSettingsRoutes from './routes/channelSettingsRoutes.js';
+import channelSettingsRouter from './routes/channelSettingsRoutes.js';
 import userSettingsRoutes from './routes/userSettingsRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -22,7 +22,7 @@ app.use(express.json());
 connectToDatabase();
 
 app.use('/api/auth', authRoutes);
-app.use('/api/channel-settings', channelSettingsRoutes);
+app.use('/api/channel-settings', channelSettingsRouter);
 app.use('/api/user-settings', userSettingsRoutes);
 
 app.listen(port, () => {

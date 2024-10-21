@@ -1,6 +1,6 @@
 {
     "229202": {
-        "settings":{
+        "user-settings":{
             "openai": "sk-proj-93284723487234",
             "claude": "sk-ant-234234234234234",
             "google": "sk-goo-234234234234234",
@@ -54,7 +54,7 @@
         }
     },
     "327765": {
-        "settings":{
+        "user-settings":{
             "openai": "sk-proj-93284723487234",
             "claude": "sk-ant-234234234234234",
             "google": "sk-goo-234234234234234",
@@ -156,7 +156,7 @@
         }
     },
     "695257": {
-        "settings":{
+        "user-settings":{
             "openai": "sk-proj-93284723487234",
             "claude": "sk-ant-234234234234234",
             "google": "sk-goo-234234234234234",
