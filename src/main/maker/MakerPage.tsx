@@ -138,7 +138,7 @@ export default function MakerPage() {
       }
 
       const response = await fetch(
-        "${import.meta.env.VITE_API_BASE_URL}/api/maker/create-videos",
+        `${import.meta.env.VITE_API_BASE_URL}/api/maker/create-videos`,
         {
           method: "POST",
           headers: {
