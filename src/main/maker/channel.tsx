@@ -3,32 +3,34 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 
 interface ChannelProps {
-  id: number;
   name: string;
-  genre: string;
+  nextUploadDate: string;
   isChecked: boolean;
-  onCheckboxChange: (id: number) => void;
+  onCheckboxChange: () => void;
 }
 
 export function Channel({
-  id,
   name,
-  genre,
+  nextUploadDate,
   isChecked,
   onCheckboxChange,
 }: ChannelProps) {
   return (
-    <div className="flex items-center space-x-2 mb-2">
+    <div className="flex items-center space-x-2 mb-5">
       <Checkbox
-        id={`channel-${id}`}
+        id={`channel-${name}`}
         checked={isChecked}
-        onCheckedChange={() => onCheckboxChange(id)}
+        onCheckedChange={onCheckboxChange}
+        className="w-6 h-6 flex-shrink-0"
       />
       <Label
-        htmlFor={`channel-${id}`}
-        className="text-lg font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+        htmlFor={`channel-${name}`}
+        className="flex items-center pl-2 cursor-pointer"
       >
-        {name} - {genre}
+        <span className="text-2xl font-medium">{name}</span>
+        <span className="text-gray-500 italic text-base ml-4">
+          Next upload: {nextUploadDate}
+        </span>
       </Label>
     </div>
   );

@@ -136,7 +136,9 @@ const ChannelNavigator: React.FC<ChannelNavigatorProps> = ({
 
                   try {
                     const response = await fetch(
-                      `http://localhost:3001/api/user-settings/${userId}`,
+                      `${
+                        import.meta.env.VITE_API_BASE_URL
+                      }/api/user-settings/${userId}`,
                       {
                         method: "PUT",
                         headers: {

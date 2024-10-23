@@ -29,29 +29,34 @@ const SettingsPopup: React.FC<SettingsPopupProps> = () => {
     const fetchSettings = async () => {
       const userId = localStorage.getItem("userId");
       const token = localStorage.getItem("token");
-      // console.log("UserId:", userId, "Token:", token);
+
       if (!userId || !token) {
         console.error("User ID or token not found");
         return;
       }
 
+      // Load cached settings from localStorage first
+      const cachedSettings = localStorage.getItem(`userSettings_${userId}`);
+      if (cachedSettings) {
+        const parsedSettings = JSON.parse(cachedSettings);
+        setTokens(sanitizeSettings(parsedSettings));
+      }
+
       try {
         const userSettings = await fetchUserSettings(userId);
-        // console.log("Fetched user settings:", userSettings);
-        if (Object.keys(userSettings).length === 0) {
-          setNotification({
-            message: "No user settings found. Using default settings.",
-            type: "neutral",
-          });
-        } else {
-          const sanitizedSettings = sanitizeSettings(userSettings);
-          // console.log("Sanitized settings:", sanitizedSettings);
-          setTokens(sanitizedSettings);
-        }
+        const sanitizedSettings = sanitizeSettings(userSettings);
+
+        // Update localStorage with new settings
+        localStorage.setItem(
+          `userSettings_${userId}`,
+          JSON.stringify(userSettings)
+        );
+
+        setTokens(sanitizedSettings);
       } catch (error) {
         console.error("Error fetching user settings:", error);
         setNotification({
-          message: "Failed to fetch user settings. Using default settings.",
+          message: "Failed to fetch user settings. Using cached settings.",
           type: "error",
         });
       }
@@ -69,6 +74,7 @@ const SettingsPopup: React.FC<SettingsPopupProps> = () => {
     setIsLoading(true);
     const userId = localStorage.getItem("userId");
     const token = localStorage.getItem("token");
+
     if (!userId || !token) {
       setNotification({
         message: "User ID or token not found. Please log in again.",
@@ -79,8 +85,11 @@ const SettingsPopup: React.FC<SettingsPopupProps> = () => {
     }
 
     try {
+      // Update localStorage immediately
+      localStorage.setItem(`userSettings_${userId}`, JSON.stringify(tokens));
+
       const response = await fetch(
-        `http://localhost:3001/api/user-settings/${userId}`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/user-settings/${userId}`,
         {
           method: "PUT",
           headers: {

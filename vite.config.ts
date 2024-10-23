@@ -12,7 +12,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:3001', // Replace with your backend server URL
+        target: process.env.VITE_API_BASE_URL, // Replace with your backend server URL
         changeOrigin: true,
         secure: false,
       }

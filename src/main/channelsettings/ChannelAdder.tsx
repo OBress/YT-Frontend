@@ -76,7 +76,7 @@ export function ChannelAdder({
     try {
       const result = await handleSaveSettings(newChannelName, newChannelData);
       if (result !== "not_modified") {
-        onAddChannel(newChannelData);
+        onAddChannel(newChannelData); // This triggers the update
         setShowAddChannelModal(false);
         setNewChannelName("");
         setSelectedPreset("");

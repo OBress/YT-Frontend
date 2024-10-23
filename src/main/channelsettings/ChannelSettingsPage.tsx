@@ -34,21 +34,38 @@ export default function ChannelSettingsPage() {
   const [expandedChannels, setExpandedChannels] = useState<Set<string>>(
     new Set()
   );
-  const [showAddChannelModal, setShowAddChannelModal] = useState(false);
-  const [newChannelName, setNewChannelName] = useState("");
   const [deleteChannelKey, setDeleteChannelKey] = useState<string | null>(null);
   const [deleteChannelInput, setDeleteChannelInput] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
   const [channelsUpdated, setChannelsUpdated] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const storedUserId = localStorage.getItem("userId");
     setUserId(storedUserId);
   }, []);
 
+  const getCachedChannelData = () => {
+    try {
+      const cached = localStorage.getItem("cachedChannelData");
+      return cached ? JSON.parse(cached) : null;
+    } catch (e) {
+      console.error("Error parsing cached channel data:", e);
+      return null;
+    }
+  };
+
   useEffect(() => {
     const userId = localStorage.getItem("userId");
     if (userId) {
+      // First load cached data if available
+      const cachedData = getCachedChannelData();
+      if (cachedData) {
+        setChannel(cachedData);
+        setIsLoading(false);
+      }
+
+      // Then fetch fresh data
       fetchChannelSettings(userId)
         .then((data) => {
           if (Object.keys(data.channels).length === 0) {
@@ -56,16 +73,22 @@ export default function ChannelSettingsPage() {
             return;
           }
           setChannel(data);
+          // Cache the new data
+          localStorage.setItem("cachedChannelData", JSON.stringify(data));
           setError(null);
         })
         .catch((error) => {
           console.error("Error fetching channel settings:", error);
           setError(error.message || "An unknown error occurred");
+        })
+        .finally(() => {
+          setIsLoading(false);
         });
     } else {
       setError("User ID not found in local storage. Please log in again.");
+      setIsLoading(false);
     }
-  }, []);
+  }, [channelsUpdated]);
 
   const handleSaveSettings = async (channelKey: string, newSettings: any) => {
     try {
@@ -76,7 +99,7 @@ export default function ChannelSettingsPage() {
       }
 
       const response = await fetch(
-        `http://localhost:3001/api/channel-settings/${userId}`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/channel-settings/${userId}`,
         {
           method: "PUT",
           headers: {
@@ -111,6 +134,23 @@ export default function ChannelSettingsPage() {
             [channelKey]: newSettings,
           },
         };
+      });
+
+      // After successful save, update the cache
+      setChannel((prevChannel) => {
+        if (!prevChannel) return null;
+        const updatedChannel = {
+          ...prevChannel,
+          channels: {
+            ...prevChannel.channels,
+            [channelKey]: newSettings,
+          },
+        };
+        localStorage.setItem(
+          "cachedChannelData",
+          JSON.stringify(updatedChannel)
+        );
+        return updatedChannel;
       });
 
       console.log("Channel settings updated successfully");
@@ -169,7 +209,7 @@ export default function ChannelSettingsPage() {
         },
       };
     });
-    setChannelsUpdated((prev) => prev + 1); // Increment channelsUpdated
+    setChannelsUpdated((prev) => prev + 1); // This triggers a refresh
   };
 
   const handleDeleteChannel = async () => {
@@ -185,7 +225,9 @@ export default function ChannelSettingsPage() {
       }
 
       const response = await fetch(
-        `http://localhost:3001/api/channel-settings/${userId}/${deleteChannelKey}`,
+        `${
+          import.meta.env.VITE_API_BASE_URL
+        }/api/channel-settings/${userId}/${deleteChannelKey}`,
         {
           method: "DELETE",
           headers: {
@@ -204,7 +246,12 @@ export default function ChannelSettingsPage() {
         if (!prevChannel) return null;
         const { [deleteChannelKey]: _, ...remainingChannels } =
           prevChannel.channels;
-        return { ...prevChannel, channels: remainingChannels };
+        const updatedChannel = { ...prevChannel, channels: remainingChannels };
+        localStorage.setItem(
+          "cachedChannelData",
+          JSON.stringify(updatedChannel)
+        );
+        return updatedChannel;
       });
 
       setDeleteChannelKey(null);

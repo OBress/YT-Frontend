@@ -28,7 +28,7 @@ export const sanitizeSettings = (
 export const fetchChannelSettings = async (userId: string): Promise<Channel> => {
   const token = localStorage.getItem("token");
   const response = await fetch(
-    `http://localhost:3001/api/channel-settings/${userId}`,
+    `${import.meta.env.VITE_API_BASE_URL}/api/channel-settings/${userId}`,
     {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -47,7 +47,7 @@ export const fetchChannelSettings = async (userId: string): Promise<Channel> => 
 export async function fetchPresets(userId: string) {
   try {
     const token = localStorage.getItem('token');
-    const response = await fetch(`http://localhost:3001/api/channel-settings/presets/${userId}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/channel-settings/presets/${userId}`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -69,7 +69,7 @@ export async function fetchPresets(userId: string) {
 export async function fetchUserSettings(userId: string) {
   try {
     const token = localStorage.getItem('token');
-    const response = await fetch(`http://localhost:3001/api/user-settings/${userId}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/user-settings/${userId}`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }

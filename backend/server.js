@@ -7,6 +7,7 @@ import { connectToDatabase } from './config/database.js';
 import authRoutes from './routes/authRoutes.js';
 import channelSettingsRouter from './routes/channelSettingsRoutes.js';
 import userSettingsRoutes from './routes/userSettingsRoutes.js';
+import makerRoutes from './routes/makerRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -24,6 +25,7 @@ connectToDatabase();
 app.use('/api/auth', authRoutes);
 app.use('/api/channel-settings', channelSettingsRouter);
 app.use('/api/user-settings', userSettingsRoutes);
+app.use('/api/maker', makerRoutes);
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);

@@ -166,3 +166,33 @@ export async function addChannel(req, res) {
     res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 }
+
+export async function getChannelNamesAndUploadDates(req, res) {
+  try {
+    const userId = req.params.userId;
+    // console.log('Fetching data for userId:', userId);
+    const database = client.db('YouTube-Dashboard');
+    const collection = database.collection('everything');
+
+    const userDocument = await collection.findOne({ [userId]: { $exists: true } });
+    // console.log('User document:', userDocument);
+
+    if (!userDocument) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const channels = userDocument[userId].channels;
+    // console.log('Channels:', channels);
+
+    const channelData = Object.entries(channels).map(([channelName, channelInfo]) => ({
+      name: channelName,
+      nextUploadDate: channelInfo?.youtube_upload?.next_upload_date || 'Not set'
+    }));
+
+    // console.log('Channel data:', channelData);
+    res.json(channelData);
+  } catch (error) {
+    console.error('Error in getChannelNamesAndUploadDates:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message, stack: error.stack });
+  }
+}
