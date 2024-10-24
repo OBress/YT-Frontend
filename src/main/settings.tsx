@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Eye, EyeOff, Save } from "lucide-react";
+import { Eye, EyeOff, Save, ChevronDown, ChevronRight } from "lucide-react";
 import { DialogFooter, DialogContent } from "@/components/ui/dialog";
 import {
   sanitizeSettings,
@@ -24,6 +24,9 @@ const SettingsPopup: React.FC<SettingsPopupProps> = () => {
     message: string;
     type: "success" | "error" | "neutral";
   } | null>(null);
+  const [expandedSections, setExpandedSections] = useState<
+    Record<string, boolean>
+  >({});
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -140,6 +143,10 @@ const SettingsPopup: React.FC<SettingsPopupProps> = () => {
     setVisibleTokens((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const toggleSection = (section: string) => {
+    setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
+  };
+
   useEffect(() => {
     if (notification) {
       const timer = setTimeout(() => setNotification(null), 3000);
@@ -149,46 +156,79 @@ const SettingsPopup: React.FC<SettingsPopupProps> = () => {
 
   return (
     <>
-      <DialogContent>
-        <h2 className="text-2xl font-bold mb-4">Settings</h2>
-        <div className="space-y-4">
-          {Object.entries(tokens).map(([key, value]) => (
-            <div key={key} className="flex items-center space-x-4">
-              <label htmlFor={key} className="text-sm font-medium w-1/3">
-                {key.charAt(0).toUpperCase() + key.slice(1)} Token:
-              </label>
-              <div className="relative w-2/3">
-                <Input
-                  id={key}
-                  type="text"
-                  value={value}
-                  onChange={handleTokenChange(key)}
-                  placeholder={`Enter ${key} token`}
-                  className={`pr-10 ${
-                    visibleTokens[key] ? "" : "text-security-disc"
-                  }`}
-                  autoComplete="off"
-                  data-lpignore="true"
-                  data-form-type="other"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-0 top-0 h-full"
-                  onClick={() => toggleTokenVisibility(key)}
-                >
-                  {visibleTokens[key] ? (
-                    <EyeOff size={16} />
-                  ) : (
-                    <Eye size={16} />
+      <DialogContent className="max-h-[80vh] flex flex-col">
+        <div className="mb-2">
+          <h2 className="text-2xl font-bold">Settings</h2>
+          <div className="h-0.5 bg-border mt-2"></div>
+        </div>
+        <div className="space-y-2 overflow-y-auto flex-1 pr-4">
+          {Object.entries(tokens).map(([sectionName, sectionSettings]) => (
+            <div key={sectionName} className="border rounded-lg p-4">
+              <button
+                onClick={() => toggleSection(sectionName)}
+                className="flex items-center w-full text-left font-semibold mb-2"
+              >
+                {expandedSections[sectionName] ? (
+                  <ChevronDown className="mr-2 h-4 w-4" />
+                ) : (
+                  <ChevronRight className="mr-2 h-4 w-4" />
+                )}
+                {sectionName.charAt(0).toUpperCase() + sectionName.slice(1)}
+              </button>
+
+              {expandedSections[sectionName] && (
+                <div className="space-y-4 mt-2">
+                  {Object.entries(sectionSettings).map(
+                    ([settingKey, settingValue]) => (
+                      <div
+                        key={settingKey}
+                        className="flex items-center space-x-4 ml-6"
+                      >
+                        <label
+                          htmlFor={settingKey}
+                          className="text-sm font-medium w-1/3"
+                        >
+                          {settingKey.split("-").join(" ")}:
+                        </label>
+                        <div className="relative w-2/3">
+                          <Input
+                            id={settingKey}
+                            type="text"
+                            value={settingValue as string}
+                            onChange={handleTokenChange(settingKey)}
+                            placeholder={`Enter ${settingKey}`}
+                            className={`pr-10 ${
+                              visibleTokens[settingKey]
+                                ? ""
+                                : "text-security-disc"
+                            }`}
+                            autoComplete="off"
+                            data-lpignore="true"
+                            data-form-type="other"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-0 top-0 h-full"
+                            onClick={() => toggleTokenVisibility(settingKey)}
+                          >
+                            {visibleTokens[settingKey] ? (
+                              <EyeOff size={16} />
+                            ) : (
+                              <Eye size={16} />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    )
                   )}
-                </Button>
-              </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
-        <DialogFooter>
+        <DialogFooter className="mt-4">
           <Button onClick={handleSave} className="w-full" disabled={isLoading}>
             <Save className="mr-2 h-4 w-4" />
             {isLoading ? "Saving..." : "Save Changes"}
