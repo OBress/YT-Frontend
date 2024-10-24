@@ -8,11 +8,7 @@ import {
 } from "@/components/ui/card";
 import JSONEditor from "./JsonEditor";
 import { ChevronRight, ChevronDown, X } from "lucide-react";
-import {
-  Channel,
-  sanitizeSettings,
-  fetchChannelSettings,
-} from "./channelSettingsUtils";
+import { sanitizeSettings } from "./channelSettingsUtils";
 import { ChannelAdder } from "./ChannelAdder";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,9 +20,10 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { useUserData } from "@/contexts/UserDataContext";
 
 export default function ChannelSettingsPage() {
-  const [channel, setChannel] = useState<Channel | null>(null);
+  const { channelData, refreshData, isLoading } = useUserData();
   const [expandedJsonPaths, setExpandedJsonPaths] = useState<
     Record<string, Set<string>>
   >({});
@@ -38,61 +35,29 @@ export default function ChannelSettingsPage() {
   const [deleteChannelInput, setDeleteChannelInput] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
   const [channelsUpdated, setChannelsUpdated] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     const storedUserId = localStorage.getItem("userId");
     setUserId(storedUserId);
   }, []);
 
-  const getCachedChannelData = () => {
-    try {
-      const cached = localStorage.getItem("cachedChannelData");
-      return cached ? JSON.parse(cached) : null;
-    } catch (e) {
-      console.error("Error parsing cached channel data:", e);
-      return null;
-    }
-  };
-
   useEffect(() => {
-    const userId = localStorage.getItem("userId");
-    if (userId) {
-      // First load cached data if available
-      const cachedData = getCachedChannelData();
-      if (cachedData) {
-        setChannel(cachedData);
-        setIsLoading(false);
-      }
-
-      // Then fetch fresh data
-      fetchChannelSettings(userId)
-        .then((data) => {
-          if (Object.keys(data.channels).length === 0) {
-            setError("No channels found. Please set up your channel first.");
-            return;
-          }
-          setChannel(data);
-          // Cache the new data
-          localStorage.setItem("cachedChannelData", JSON.stringify(data));
-          setError(null);
-        })
-        .catch((error) => {
-          console.error("Error fetching channel settings:", error);
-          setError(error.message || "An unknown error occurred");
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
+    if (!channelData && !isLoading && userId) {
+      setError("No channel data available.");
+    } else if (
+      channelData &&
+      channelData.channels &&
+      Object.keys(channelData.channels).length === 0
+    ) {
+      setError("No channels found. Please set up your channel first.");
     } else {
-      setError("User ID not found in local storage. Please log in again.");
-      setIsLoading(false);
+      setError(null);
     }
-  }, [channelsUpdated]);
+  }, [channelData, isLoading, userId]);
 
   const handleSaveSettings = async (channelKey: string, newSettings: any) => {
     try {
-      const userId = localStorage.getItem("userId");
       const token = localStorage.getItem("token");
       if (!userId || !token) {
         throw new Error("User ID or token not found");
@@ -114,7 +79,7 @@ export default function ChannelSettingsPage() {
       );
 
       if (response.status === 304) {
-        console.log("No changes to save");
+        // console.log("No changes to save");
         return "not_modified";
       }
 
@@ -125,36 +90,20 @@ export default function ChannelSettingsPage() {
         );
       }
 
-      setChannel((prevChannel) => {
-        if (!prevChannel) return null;
-        return {
-          ...prevChannel,
+      // Update local channelData state
+      if (channelData) {
+        const updatedChannelData = {
+          ...channelData,
           channels: {
-            ...prevChannel.channels,
+            ...channelData.channels,
             [channelKey]: newSettings,
           },
         };
-      });
+        localStorage.setItem("channelData", JSON.stringify(updatedChannelData));
+      }
 
-      // After successful save, update the cache
-      setChannel((prevChannel) => {
-        if (!prevChannel) return null;
-        const updatedChannel = {
-          ...prevChannel,
-          channels: {
-            ...prevChannel.channels,
-            [channelKey]: newSettings,
-          },
-        };
-        localStorage.setItem(
-          "cachedChannelData",
-          JSON.stringify(updatedChannel)
-        );
-        return updatedChannel;
-      });
-
-      console.log("Channel settings updated successfully");
-      setChannelsUpdated((prev) => prev + 1); // Increment channelsUpdated
+      // console.log("Channel settings updated successfully");
+      setChannelsUpdated((prev) => prev + 1);
       return "modified";
     } catch (error) {
       console.error("Error updating channel settings:", error);
@@ -198,18 +147,15 @@ export default function ChannelSettingsPage() {
     });
   };
 
-  const handleAddChannel = (newChannelData: any) => {
-    setChannel((prevChannel) => {
-      if (!prevChannel) return null;
-      return {
-        ...prevChannel,
-        channels: {
-          ...prevChannel.channels,
-          [newChannelData.id]: newChannelData,
-        },
-      };
-    });
-    setChannelsUpdated((prev) => prev + 1); // This triggers a refresh
+  const handleAddChannel = async (newChannelData: any) => {
+    try {
+      // Wait for the channel to be added
+      await refreshData();
+      setChannelsUpdated((prev) => prev + 1);
+      setError(null); // Clear any existing errors
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to add channel");
+    }
   };
 
   const handleDeleteChannel = async () => {
@@ -218,7 +164,6 @@ export default function ChannelSettingsPage() {
     }
 
     try {
-      const userId = localStorage.getItem("userId");
       const token = localStorage.getItem("token");
       if (!userId || !token) {
         throw new Error("User ID or token not found");
@@ -242,21 +187,13 @@ export default function ChannelSettingsPage() {
         );
       }
 
-      setChannel((prevChannel) => {
-        if (!prevChannel) return null;
-        const { [deleteChannelKey]: _, ...remainingChannels } =
-          prevChannel.channels;
-        const updatedChannel = { ...prevChannel, channels: remainingChannels };
-        localStorage.setItem(
-          "cachedChannelData",
-          JSON.stringify(updatedChannel)
-        );
-        return updatedChannel;
-      });
+      // Refresh data from server and update localStorage
+      await refreshData();
 
       setDeleteChannelKey(null);
       setDeleteChannelInput("");
       setChannelsUpdated((prev) => prev + 1); // Increment channelsUpdated
+      setIsDeleteDialogOpen(false);
     } catch (error) {
       console.error("Error deleting channel:", error);
       setError(
@@ -296,8 +233,8 @@ export default function ChannelSettingsPage() {
             )}
           </div>
         )}
-        {channel && Object.keys(channel.channels).length > 0
-          ? Object.entries(channel.channels).map(
+        {channelData?.channels && Object.keys(channelData.channels).length > 0
+          ? Object.entries(channelData.channels).map(
               ([channelKey, channelData], index, array) => (
                 <React.Fragment key={channelKey}>
                   <div className="mb-6">
@@ -316,7 +253,10 @@ export default function ChannelSettingsPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => setDeleteChannelKey(channelKey)}
+                        onClick={() => {
+                          setDeleteChannelKey(channelKey);
+                          setIsDeleteDialogOpen(true);
+                        }}
                       >
                         <X className="h-5 w-5" />
                       </Button>
@@ -324,7 +264,9 @@ export default function ChannelSettingsPage() {
                     {expandedChannels.has(channelKey) && (
                       <div className="border rounded-xl p-4">
                         <JSONEditor
-                          data={sanitizeSettings(channelData)}
+                          data={sanitizeSettings(
+                            channelData as Record<string, any>
+                          )}
                           onSave={(newSettings) =>
                             handleSaveSettings(channelKey, newSettings)
                           }
@@ -350,8 +292,11 @@ export default function ChannelSettingsPage() {
             )}
       </CardContent>
       <Dialog
-        open={deleteChannelKey !== null}
-        onOpenChange={() => setDeleteChannelKey(null)}
+        open={isDeleteDialogOpen}
+        onOpenChange={() => {
+          setIsDeleteDialogOpen(false);
+          setDeleteChannelKey(null);
+        }}
       >
         <DialogContent>
           <DialogHeader>
@@ -368,7 +313,13 @@ export default function ChannelSettingsPage() {
             placeholder="Enter channel name to confirm"
           />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteChannelKey(null)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsDeleteDialogOpen(false);
+                setDeleteChannelKey(null);
+              }}
+            >
               Cancel
             </Button>
             <Button

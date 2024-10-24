@@ -44,6 +44,8 @@ const JSONEditor: React.FC<JSONEditorProps> = ({
           type: "success",
         });
       }
+      // Add console.log for debugging
+      // console.log("Save result:", result, "Notification set:", notification);
     } catch (error) {
       console.error("Save error:", error); // Add this line for debugging
       setNotification({
@@ -81,7 +83,7 @@ const JSONEditor: React.FC<JSONEditorProps> = ({
       </div>
       {notification && (
         <div
-          className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-md bg-background border shadow-lg animate-fade-in-out ${
+          className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-md bg-background border shadow-lg z-50 ${
             notification.type === "success"
               ? "text-green-500"
               : notification.type === "error"
@@ -169,13 +171,13 @@ function JSONEditorNode({
   } else {
     return (
       <div className="flex items-center mt-1 ml-8">
-        <span className="font-medium mr-2 min-w-[100px]">
+        <span className="font-medium mr-2 whitespace-nowrap">
           {path[path.length - 1]}:
         </span>
         <Input
           value={data === null ? "" : String(data)}
           onChange={(e) => onChange(e.target.value)}
-          className="flex-grow"
+          className="w-full"
         />
       </div>
     );

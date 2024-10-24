@@ -22,38 +22,41 @@ export function UserDataProvider({ children }: { children: React.ReactNode }) {
 
   const fetchAllData = async () => {
     const userId = localStorage.getItem("userId");
+    const token = localStorage.getItem("token");
     const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
 
-    // Set loading to false if user is not logged in
-    if (!userId || !isLoggedIn) {
+    if (!userId || !token || !isLoggedIn) {
+      setChannelData(null);
+      setUserData(null);
       setIsLoading(false);
       return;
     }
 
     try {
-      // Try to load from localStorage first
-      const cachedChannelData = localStorage.getItem(`channelData`);
-      const cachedUserData = localStorage.getItem(`userData`);
-
-      // Only set cached data if we don't already have data in state
-      if (cachedChannelData && cachedUserData && !channelData && !userData) {
-        setChannelData(JSON.parse(cachedChannelData));
-        setUserData(JSON.parse(cachedUserData));
-      }
-
-      // Fetch fresh data from the server
+      // Always fetch fresh data from the server
       const [newChannelData, newUserData] = await Promise.all([
         fetchChannelSettings(userId),
         fetchUserSettings(userId),
       ]);
 
       // Update state and cache
-      setChannelData(newChannelData);
-      setUserData(newUserData);
-      localStorage.setItem(`channelData`, JSON.stringify(newChannelData));
-      localStorage.setItem(`userData`, JSON.stringify(newUserData));
+      if (newChannelData) {
+        setChannelData(newChannelData);
+        localStorage.setItem("channelData", JSON.stringify(newChannelData));
+      }
+      console.log("newUserData", newUserData);
+      if (newUserData) {
+        setUserData(newUserData);
+        localStorage.setItem("userData", JSON.stringify(newUserData));
+      }
     } catch (error) {
       console.error("Error fetching user data:", error);
+      // Don't clear cached data on error, just use what we have
+      const cachedChannelData = localStorage.getItem("channelData");
+      const cachedUserData = localStorage.getItem("userData");
+
+      if (cachedChannelData) setChannelData(JSON.parse(cachedChannelData));
+      if (cachedUserData) setUserData(JSON.parse(cachedUserData));
     } finally {
       setIsLoading(false);
     }
@@ -61,7 +64,7 @@ export function UserDataProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     fetchAllData();
-  }, [localStorage.getItem("userId"), localStorage.getItem("isLoggedIn")]);
+  }, []);
 
   const refreshData = async () => {
     setIsLoading(true);

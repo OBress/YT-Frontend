@@ -60,8 +60,10 @@ export default {
   		},
   		keyframes: {
   			'fade-in-out': {
-  				'0%, 100%': { opacity: 0 },
-  				'10%, 90%': { opacity: 1 },
+  				'0%': { opacity: '0' },
+  				'10%': { opacity: '1' },
+  				'90%': { opacity: '1' },
+  				'100%': { opacity: '0' },
   			}
   		},
   		animation: {

@@ -77,14 +77,20 @@ export async function fetchUserSettings(userId: string) {
 
     if (!response.ok) {
       console.warn(`Failed to fetch user settings: ${response.status} ${response.statusText}`);
-      return {};
+      return null;
     }
 
     const data = await response.json();
-    // console.log("Raw response data:", data);
-    return data.settings || {};  // Changed from data["user-settings"] to data.settings
+    // Only store and return if settings actually contains data
+    if (data.settings && Object.keys(data.settings).length > 0) {
+      localStorage.setItem('userData', JSON.stringify(data.settings));
+      return data.settings;
+    }
+    
+    // Return null if settings is empty or undefined
+    return null;
   } catch (error) {
     console.error('Error fetching user settings:', error);
-    return {};
+    return null;
   }
 }

@@ -9,10 +9,12 @@ export async function getUserSettings(req, res) {
     const userDocument = await collection.findOne({ [userId]: { $exists: true } });
 
     if (!userDocument) {
+      console.log('No user document found for userId:', userId);
       return res.status(404).json({ error: 'User not found' });
     }
-
-    const userSettings = userDocument[userId]['user-settings'];
+    
+    // Fix: Access the nested structure correctly
+    const userSettings = userDocument[userId]['user-settings'];  // Changed from String(userId) to userId
 
     if (!userSettings) {
       return res.status(404).json({ error: 'User settings not found' });
@@ -29,6 +31,7 @@ export async function updateUserSettings(req, res) {
   try {
     const userId = req.params.userId;
     const newSettings = req.body.settings;
+    console.log('Updating settings for userId:', userId);
     const database = client.db('YouTube-Dashboard');
     const collection = database.collection('everything');
 

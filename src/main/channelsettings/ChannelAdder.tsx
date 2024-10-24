@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { fetchPresets } from "./channelSettingsUtils";
+import { useUserData } from "@/contexts/UserDataContext";
 
 export function ChannelAdder({
   onAddChannel,
@@ -41,6 +42,8 @@ export function ChannelAdder({
   const [combinedPresets, setCombinedPresets] = useState<Record<string, any>>(
     {}
   );
+
+  const { refreshData } = useUserData();
 
   const fetchPresetsData = useCallback(() => {
     if (userId) {
@@ -76,11 +79,12 @@ export function ChannelAdder({
     try {
       const result = await handleSaveSettings(newChannelName, newChannelData);
       if (result !== "not_modified") {
-        onAddChannel(newChannelData); // This triggers the update
+        onAddChannel(newChannelData); // Triggers a refresh via channelsUpdated
         setShowAddChannelModal(false);
         setNewChannelName("");
         setSelectedPreset("");
         fetchPresetsData();
+        await refreshData(); // Ensure context refreshes data
       } else {
         console.error("Failed to add channel: No changes were made");
       }
@@ -160,7 +164,12 @@ export function ChannelAdder({
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={handleAddChannel}>Add Channel</Button>
+            <Button
+              onClick={handleAddChannel}
+              disabled={!newChannelName || !selectedPreset}
+            >
+              Add Channel
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -14,21 +14,25 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import SettingsPopup from "./settings";
+import { useUserData } from "@/contexts/UserDataContext";
 
 interface ChannelNavigatorProps {
   onLogout: () => void;
   userId: string | null;
+  onUpdateSettings: (tokens: Record<string, string>) => Promise<void>;
 }
 
 const ChannelNavigator: React.FC<ChannelNavigatorProps> = ({
   onLogout,
   userId,
+  onUpdateSettings,
 }) => {
   const navigate = useNavigate();
+  const { isLoading } = useUserData();
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [activeTab, setActiveTab] = useState("maker");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const settingsRef = useRef<HTMLDivElement>(null);
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
 
   useEffect(() => {
     document.documentElement.classList.add("dark");
@@ -51,61 +55,74 @@ const ChannelNavigator: React.FC<ChannelNavigatorProps> = ({
     setIsSettingsOpen(!isSettingsOpen);
   };
 
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div className={`flex flex-col min-h-screen ${isDarkMode ? "dark" : ""}`}>
       <div className="sticky top-0 z-20 bg-background shadow-md">
         <div className="flex flex-col sm:flex-row justify-between items-center px-4 py-2">
-          <div className="flex justify-between items-center w-full sm:w-auto">
+          {/* Top row - always visible */}
+          <div className="w-full flex justify-between items-center">
             <div className="flex items-center space-x-5">
-              <h1 className="text-xl font-bold">Channel Dashboard</h1>
+              <h1 className="text-xl sm:text-2xl font-bold">
+                Channel Dashboard
+              </h1>
               <Button
                 onClick={toggleDarkMode}
                 variant="outline"
                 size="icon"
-                className=""
+                className="h-9 w-9"
               >
                 {isDarkMode ? (
-                  <Sun className="h-[1.2rem] w-[1.2rem]" />
+                  <Sun className="h-[1.3rem] w-[1.3rem]" />
                 ) : (
-                  <Moon className="h-[1.2rem] w-[1.2rem]" />
+                  <Moon className="h-[1.3rem] w-[1.3rem]" />
                 )}
               </Button>
             </div>
-            <div className="flex items-center space-x-4 sm:hidden">
-              <Button onClick={toggleSettings} variant="outline" size="icon">
-                <Settings className="h-[1.2rem] w-[1.2rem]" />
+            <div className="flex items-center space-x-4">
+              <Button
+                onClick={toggleSettings}
+                variant="outline"
+                size="icon"
+                className="h-9 w-9"
+              >
+                <Settings className="h-[1.3rem] w-[1.3rem]" />
               </Button>
-              <Button onClick={handleLogout}>Logout</Button>
+              <Button
+                onClick={() => setIsLogoutDialogOpen(true)}
+                className="text-base px-4 py-2 h-9"
+              >
+                Logout
+              </Button>
             </div>
           </div>
-          <div className="flex justify-around sm:justify-center items-center mt-2 sm:mt-0 w-full sm:w-auto overflow-x-auto sm:overflow-x-visible">
+
+          {/* Navigation buttons below on mobile, centered on desktop */}
+          <div className="flex space-x-4 mt-2 sm:mt-0 sm:absolute sm:left-1/2 sm:-translate-x-1/2">
             <Button
               onClick={() => setActiveTab("maker")}
               variant={activeTab === "maker" ? "default" : "ghost"}
-              className="text-base sm:text-lg py-2 px-4 sm:py-3 sm:px-6 flex-shrink-0"
+              className="text-lg sm:text-xl py-2 px-6 sm:py-3 sm:px-8 flex-shrink-0"
             >
               Maker
             </Button>
             <Button
               onClick={() => setActiveTab("analytics")}
               variant={activeTab === "analytics" ? "default" : "ghost"}
-              className="text-base sm:text-lg py-2 px-4 sm:py-3 sm:px-6 flex-shrink-0"
+              className="text-lg sm:text-xl py-2 px-6 sm:py-3 sm:px-8 flex-shrink-0"
             >
               Analytics
             </Button>
             <Button
               onClick={() => setActiveTab("settings")}
               variant={activeTab === "settings" ? "default" : "ghost"}
-              className="text-base sm:text-lg py-2 px-4 sm:py-3 sm:px-6 flex-shrink-0"
+              className="text-lg sm:text-xl py-2 px-6 sm:py-3 sm:px-8 flex-shrink-0"
             >
               Channel Settings
             </Button>
-          </div>
-          <div className="hidden sm:flex items-center space-x-4">
-            <Button onClick={toggleSettings} variant="outline" size="icon">
-              <Settings className="h-[1.2rem] w-[1.2rem]" />
-            </Button>
-            <Button onClick={handleLogout}>Logout</Button>
           </div>
         </div>
       </div>
@@ -115,7 +132,7 @@ const ChannelNavigator: React.FC<ChannelNavigatorProps> = ({
           {activeTab === "analytics" && <AnalyticsPage />}
           {activeTab === "settings" && <ChannelSettingsPage />}
           <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-            <DialogContent className="sm:max-w-[425px] bg-white dark:bg-gray-800">
+            <DialogContent className="sm:max-w-[425px] bg-background">
               <DialogHeader>
                 <DialogTitle>Settings</DialogTitle>
                 <DialogDescription>
@@ -127,7 +144,6 @@ const ChannelNavigator: React.FC<ChannelNavigatorProps> = ({
                 onUpdateSettings={async (
                   updatedTokens: Record<string, string>
                 ) => {
-                  const userId = localStorage.getItem("userId");
                   const token = localStorage.getItem("token");
                   if (!userId || !token) {
                     console.error("User ID or token not found");
@@ -135,24 +151,7 @@ const ChannelNavigator: React.FC<ChannelNavigatorProps> = ({
                   }
 
                   try {
-                    const response = await fetch(
-                      `${
-                        import.meta.env.VITE_API_BASE_URL
-                      }/api/user-settings/${userId}`,
-                      {
-                        method: "PUT",
-                        headers: {
-                          "Content-Type": "application/json",
-                          Authorization: `Bearer ${token}`,
-                        },
-                        body: JSON.stringify({ settings: updatedTokens }),
-                      }
-                    );
-
-                    if (!response.ok) {
-                      throw new Error("Failed to update user settings");
-                    }
-
+                    await onUpdateSettings(updatedTokens);
                     setIsSettingsOpen(false);
                   } catch (error) {
                     console.error("Error updating user settings:", error);
@@ -163,6 +162,28 @@ const ChannelNavigator: React.FC<ChannelNavigatorProps> = ({
           </Dialog>
         </div>
       </div>
+      <Dialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
+        <DialogContent className="sm:max-w-[425px] bg-background">
+          <DialogHeader>
+            <DialogTitle>Confirm Logout</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to logout? You will need to login again to
+              access your dashboard.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end space-x-4 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setIsLogoutDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleLogout}>
+              Logout
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

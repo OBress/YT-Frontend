@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { useUserData } from "@/contexts/UserDataContext";
 
 interface ChannelData {
   name: string;
@@ -20,12 +21,19 @@ interface ChannelData {
   isChecked: boolean;
 }
 
+interface ChannelInfo {
+  youtube_upload?: {
+    next_upload_date: string;
+  };
+}
+
 export default function MakerPage() {
+  const { channelData, refreshData, isLoading } = useUserData();
   const [channels, setChannels] = useState<ChannelData[]>([]);
   const [videoCount, setVideoCount] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const [selectAll, setSelectAll] = useState<boolean>(true);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMaker, setIsLoadingMaker] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const clearMessages = useCallback(() => {
@@ -41,62 +49,26 @@ export default function MakerPage() {
   }, [error, successMessage, clearMessages]);
 
   useEffect(() => {
-    // Try to load cached channels first
-    const cachedChannels = localStorage.getItem("cachedChannels");
-    if (cachedChannels) {
-      setChannels(JSON.parse(cachedChannels));
-    }
-
-    // Then fetch fresh data
-    fetchChannelData();
-  }, []);
-
-  const fetchChannelData = async () => {
-    try {
-      const userId = localStorage.getItem("userId");
-      const token = localStorage.getItem("token");
-
-      if (!userId || !token) {
-        throw new Error("User ID or token not found");
-      }
-
-      const response = await fetch(
-        `${
-          import.meta.env.VITE_API_BASE_URL
-        }/api/channel-settings/names-and-dates/${userId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const channelsWithChecked = data.map((channel: ChannelData) => ({
-        ...channel,
+    // Load channels from context
+    if (channelData && channelData.channels) {
+      const channelList = Object.entries(
+        channelData.channels as Record<string, ChannelInfo>
+      ).map(([name, info]) => ({
+        name,
+        nextUploadDate: info.youtube_upload?.next_upload_date || "Not set",
         isChecked: true,
       }));
-
+      setChannels(channelList);
       // Cache the channels in localStorage
-      localStorage.setItem(
-        "cachedChannels",
-        JSON.stringify(channelsWithChecked)
-      );
-      setChannels(channelsWithChecked);
-    } catch (error) {
-      console.error("Error fetching channel data:", error);
-      setError("Failed to fetch channel data. Please try again later.");
+      localStorage.setItem("cachedChannels", JSON.stringify(channelList));
     }
-  };
+  }, [channelData]);
 
   const handleSelectAllChange = () => {
-    setSelectAll(!selectAll);
+    const newSelectAll = !selectAll;
+    setSelectAll(newSelectAll);
     setChannels(
-      channels.map((channel) => ({ ...channel, isChecked: !selectAll }))
+      channels.map((channel) => ({ ...channel, isChecked: newSelectAll }))
     );
   };
 
@@ -125,7 +97,7 @@ export default function MakerPage() {
       return;
     }
 
-    setIsLoading(true);
+    setIsLoadingMaker(true);
     setError(null);
     setSuccessMessage(null);
 
@@ -154,7 +126,8 @@ export default function MakerPage() {
       );
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(`HTTP error! status: ${response.status}. ${errorText}`);
       }
 
       const data = await response.json();
@@ -169,7 +142,7 @@ export default function MakerPage() {
           : "Failed to create videos. Please try again later."
       );
     } finally {
-      setIsLoading(false);
+      setIsLoadingMaker(false);
     }
   };
 
@@ -209,8 +182,8 @@ export default function MakerPage() {
             </>
           )}
           <div className="flex items-center mt-4 space-x-2">
-            <Button onClick={handleCreateVideos} disabled={isLoading}>
-              {isLoading ? (
+            <Button onClick={handleCreateVideos} disabled={isLoadingMaker}>
+              {isLoadingMaker ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Generating...

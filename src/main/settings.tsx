@@ -2,12 +2,12 @@ import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Eye, EyeOff, Save, ChevronDown, ChevronRight } from "lucide-react";
+import { Save, Eye, EyeOff, ChevronDown, ChevronRight } from "lucide-react";
 import { DialogFooter, DialogContent } from "@/components/ui/dialog";
-import {
-  sanitizeSettings,
-  fetchUserSettings,
-} from "./channelsettings/channelSettingsUtils";
+import { sanitizeSettings } from "./channelsettings/channelSettingsUtils";
+import { useUserData } from "@/contexts/UserDataContext";
+import { Label } from "@/components/ui/label";
+import { fetchUserSettings } from "./channelsettings/channelSettingsUtils";
 
 interface SettingsPopupProps {
   onClose: () => void;
@@ -15,7 +15,10 @@ interface SettingsPopupProps {
 }
 
 const SettingsPopup: React.FC<SettingsPopupProps> = () => {
-  const [tokens, setTokens] = useState<Record<string, string>>({});
+  const { userData } = useUserData(); // Only destructure what's used
+  const [tokens, setTokens] = useState<Record<string, Record<string, string>>>(
+    {}
+  );
   const [visibleTokens, setVisibleTokens] = useState<Record<string, boolean>>(
     {}
   );
@@ -38,39 +41,40 @@ const SettingsPopup: React.FC<SettingsPopupProps> = () => {
         return;
       }
 
-      // Load cached settings from localStorage first
-      const cachedSettings = localStorage.getItem(`userSettings_${userId}`);
-      if (cachedSettings) {
-        const parsedSettings = JSON.parse(cachedSettings);
-        setTokens(sanitizeSettings(parsedSettings));
+      // Use userData from context if available
+      if (userData) {
+        setTokens(sanitizeSettings(userData));
+        return;
       }
 
       try {
         const userSettings = await fetchUserSettings(userId);
         const sanitizedSettings = sanitizeSettings(userSettings);
-
-        // Update localStorage with new settings
-        localStorage.setItem(
-          `userSettings_${userId}`,
-          JSON.stringify(userSettings)
-        );
-
         setTokens(sanitizedSettings);
       } catch (error) {
         console.error("Error fetching user settings:", error);
         setNotification({
-          message: "Failed to fetch user settings. Using cached settings.",
+          message: "Failed to fetch user settings.",
           type: "error",
         });
       }
     };
 
     fetchSettings();
-  }, []);
+  }, [userData]); // Add userData as dependency
 
   const handleTokenChange =
     (key: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
-      setTokens((prev) => ({ ...prev, [key]: e.target.value }));
+      setTokens((prev) => {
+        const [section, setting] = key.split(".");
+        return {
+          ...prev,
+          [section]: {
+            ...prev[section],
+            [setting]: e.target.value,
+          },
+        };
+      });
     };
 
   const handleSave = async () => {
@@ -88,9 +92,6 @@ const SettingsPopup: React.FC<SettingsPopupProps> = () => {
     }
 
     try {
-      // Update localStorage immediately
-      localStorage.setItem(`userSettings_${userId}`, JSON.stringify(tokens));
-
       const response = await fetch(
         `${import.meta.env.VITE_API_BASE_URL}/api/user-settings/${userId}`,
         {
@@ -103,7 +104,13 @@ const SettingsPopup: React.FC<SettingsPopupProps> = () => {
         }
       );
 
-      if (response.status === 304) {
+      if (response.ok) {
+        localStorage.setItem("userData", JSON.stringify({ settings: tokens }));
+        setNotification({
+          message: "User settings updated successfully",
+          type: "success",
+        });
+      } else if (response.status === 304) {
         setNotification({
           message: "No changes to save",
           type: "neutral",
@@ -117,11 +124,6 @@ const SettingsPopup: React.FC<SettingsPopupProps> = () => {
           `Failed to update user settings: ${response.status} ${response.statusText}. ${errorText}`
         );
       }
-
-      setNotification({
-        message: "User settings updated successfully",
-        type: "success",
-      });
     } catch (error) {
       console.error("Error updating user settings:", error);
       let errorMessage = "An error occurred while updating user settings";
@@ -139,6 +141,13 @@ const SettingsPopup: React.FC<SettingsPopupProps> = () => {
     }
   };
 
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => setNotification(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]); // Removed onClose from dependencies
+
   const toggleTokenVisibility = (key: string) => {
     setVisibleTokens((prev) => ({ ...prev, [key]: !prev[key] }));
   };
@@ -146,13 +155,6 @@ const SettingsPopup: React.FC<SettingsPopupProps> = () => {
   const toggleSection = (section: string) => {
     setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
-
-  useEffect(() => {
-    if (notification) {
-      const timer = setTimeout(() => setNotification(null), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [notification]);
 
   return (
     <>
@@ -195,7 +197,9 @@ const SettingsPopup: React.FC<SettingsPopupProps> = () => {
                             id={settingKey}
                             type="text"
                             value={settingValue as string}
-                            onChange={handleTokenChange(settingKey)}
+                            onChange={handleTokenChange(
+                              `${sectionName}.${settingKey}`
+                            )}
                             placeholder={`Enter ${settingKey}`}
                             className={`pr-10 ${
                               visibleTokens[settingKey]
@@ -205,6 +209,7 @@ const SettingsPopup: React.FC<SettingsPopupProps> = () => {
                             autoComplete="off"
                             data-lpignore="true"
                             data-form-type="other"
+                            readOnly={false} // Explicitly set to false
                           />
                           <Button
                             type="button"
@@ -250,7 +255,7 @@ const SettingsPopup: React.FC<SettingsPopupProps> = () => {
               bottom: "20px",
               left: "50%",
               transform: "translateX(-50%)",
-              zIndex: 9999999, // Very high z-index
+              zIndex: 9999999,
             }}
           >
             {notification.message}

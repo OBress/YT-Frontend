@@ -9,8 +9,17 @@ import {
 } from "react-router-dom";
 import LoginPage from "./auth/login";
 import ChannelNavigator from "./main/navigator";
+import { UserDataProvider } from "./contexts/UserDataContext";
 
-export default function AuthWrapper() {
+function App() {
+  return (
+    <Router>
+      <AppContent />
+    </Router>
+  );
+}
+
+function AppContent() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -28,6 +37,9 @@ export default function AuthWrapper() {
     setUserId(null);
     localStorage.removeItem("isLoggedIn");
     localStorage.removeItem("userId");
+    localStorage.removeItem("token");
+    localStorage.removeItem("channelData");
+    localStorage.removeItem("userData");
   };
 
   if (isLoading) {
@@ -35,35 +47,41 @@ export default function AuthWrapper() {
   }
 
   return (
-    <Router>
-      <Routes>
-        <Route
-          path="/login"
-          element={
-            isLoggedIn ? (
+    <Routes>
+      <Route
+        path="/login"
+        element={
+          isLoggedIn ? (
+            <UserDataProvider>
               <Navigate to="/channel-navigator" />
-            ) : (
-              <LoginPage setIsLoggedIn={setIsLoggedIn} />
-            )
-          }
-        />
-        <Route
-          path="/channel-navigator"
-          element={
-            isLoggedIn ? (
-              <ChannelNavigator onLogout={handleLogout} userId={userId} />
-            ) : (
-              <Navigate to="/login" />
-            )
-          }
-        />
-        <Route
-          path="*"
-          element={
-            <Navigate to={isLoggedIn ? "/channel-navigator" : "/login"} />
-          }
-        />
-      </Routes>
-    </Router>
+            </UserDataProvider>
+          ) : (
+            <LoginPage setIsLoggedIn={setIsLoggedIn} />
+          )
+        }
+      />
+      <Route
+        path="/channel-navigator"
+        element={
+          isLoggedIn ? (
+            <UserDataProvider>
+              <ChannelNavigator
+                onLogout={handleLogout}
+                userId={userId}
+                onUpdateSettings={async () => {}}
+              />
+            </UserDataProvider>
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
+      />
+      <Route
+        path="*"
+        element={<Navigate to={isLoggedIn ? "/channel-navigator" : "/login"} />}
+      />
+    </Routes>
   );
 }
+
+export default App;
