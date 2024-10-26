@@ -25,7 +25,7 @@ export async function createVideos(req, res) {
       return acc;
     }, {});
 
-    // Here you would implement the logic to create videos
+    // Here you would implement the logic to create video
     // For now, we'll just return a success message
     res.json({
       message: `Queued ${videoCount} videos for channels: ${channelNames.join(', ')}`,
