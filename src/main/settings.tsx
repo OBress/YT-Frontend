@@ -7,6 +7,7 @@ import { DialogFooter, DialogContent } from "@/components/ui/dialog";
 import { sanitizeSettings } from "./channelsettings/channelSettingsUtils";
 import { useUserData } from "@/contexts/UserDataContext";
 import { fetchUserSettings } from "./channelsettings/channelSettingsUtils";
+import { API_BASE_URL } from "@/config";
 
 interface SettingsPopupProps {
   onClose: () => void;
@@ -92,7 +93,7 @@ const SettingsPopup: React.FC<SettingsPopupProps> = () => {
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/user-settings/${userId}`,
+        `${API_BASE_URL}/api/user-settings/${userId}`,
         {
           method: "PUT",
           headers: {

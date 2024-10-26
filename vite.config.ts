@@ -3,25 +3,30 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
-  // Use conditional base URL
-  base: process.env.NODE_ENV === 'production' ? '/YT-Frontend/' : '/',
+  base: '/',  // Change this if you're not serving from root
   plugins: [react()],
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
     sourcemap: true,
+    // Add manifest for better asset tracking
+    manifest: true,
     rollupOptions: {
       output: {
-        manualChunks: undefined,
-      },
-    },
+        // Ensure consistent chunk naming
+        entryFileNames: 'assets/[name].[hash].js',
+        chunkFileNames: 'assets/[name].[hash].js',
+        assetFileNames: 'assets/[name].[hash].[ext]'
+      }
+    }
   },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  server: {}, // Remove the proxy configuration
+  server: {
+  },
   css: {
     postcss: './postcss.config.js',
   },

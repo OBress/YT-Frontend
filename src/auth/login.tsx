@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Lock, AlertCircle, Sun, Moon } from "lucide-react";
+import { API_BASE_URL } from "@/config";
 
 interface LoginPageProps {
   setIsLoggedIn: (value: boolean) => void;
@@ -40,24 +41,14 @@ export default function LoginPage({ setIsLoggedIn }: LoginPageProps) {
     e.preventDefault();
     setError("");
 
-    // Add these debug lines
-    console.log("Environment variable:", import.meta.env.VITE_API_BASE_URL);
-    console.log(
-      "Full URL:",
-      `${import.meta.env.VITE_API_BASE_URL}/api/auth/login`
-    );
-
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/auth/login`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ username, password }),
-        }
-      );
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, password }),
+      });
 
       if (!response.ok) {
         throw new Error("Invalid username or password");

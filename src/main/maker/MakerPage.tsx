@@ -15,6 +15,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { useUserData } from "@/contexts/UserDataContext";
 import { useProgress } from "@/contexts/ProgressContext";
+import { API_BASE_URL } from "@/config";
 
 interface ChannelData {
   name: string;
@@ -100,7 +101,7 @@ export default function MakerPage() {
       try {
         const token = localStorage.getItem("token");
         const response = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL}/api/maker/job-status/${jobId}`,
+          `${API_BASE_URL}/api/maker/job-status/${jobId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -172,21 +173,18 @@ export default function MakerPage() {
         throw new Error("User ID or token not found");
       }
 
-      const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/maker/create-videos`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            userId,
-            channelNames: selectedChannels,
-            videoCount,
-          }),
-        }
-      );
+      const response = await fetch(`${API_BASE_URL}/api/maker/create-videos`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          userId,
+          channelNames: selectedChannels,
+          videoCount,
+        }),
+      });
 
       if (!response.ok) {
         if (response.status === 409) {

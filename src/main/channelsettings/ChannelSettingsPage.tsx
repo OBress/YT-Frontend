@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useUserData } from "@/contexts/UserDataContext";
+import { API_BASE_URL } from "@/config";
 
 export default function ChannelSettingsPage() {
   const { channelData, refreshData, isLoading } = useUserData();
@@ -64,7 +65,7 @@ export default function ChannelSettingsPage() {
       }
 
       const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/channel-settings/${userId}`,
+        `${API_BASE_URL}/api/channel-settings/${userId}`,
         {
           method: "PUT",
           headers: {
