@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { ChevronRight, ChevronDown, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,8 +10,8 @@ type JSONObject = { [key: string]: JSONValue };
 type JSONArray = JSONValue[];
 
 export interface JSONEditorProps {
-  data: JSONValue;
-  onSave: (data: JSONValue) => Promise<string | void>;
+  data: Record<string, any>;
+  onSave: (newSettings: JSONValue) => Promise<"not_modified" | "modified">;
   expandedPaths: Set<string>;
   toggleExpanded: (path: (string | number)[]) => void;
   channelKey: string;
@@ -22,7 +22,6 @@ const JSONEditor: React.FC<JSONEditorProps> = ({
   onSave,
   expandedPaths,
   toggleExpanded,
-  channelKey,
 }) => {
   const [data, setData] = useState<JSONValue>(initialData);
   const [notification, setNotification] = useState<{
@@ -118,10 +117,6 @@ function JSONEditorNode({
   const pathString = path.join(".");
   const isExpanded = expandedPaths.has(pathString);
   const isRoot = path.length === 0;
-  const isChannel =
-    path.length === 1 &&
-    typeof path[0] === "string" &&
-    path[0].startsWith("channel");
 
   if (typeof data === "object" && data !== null) {
     const isArray = Array.isArray(data);

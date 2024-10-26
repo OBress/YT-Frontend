@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Channel } from "./channel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,18 +29,16 @@ interface ChannelInfo {
 }
 
 export default function MakerPage() {
-  const { channelData, refreshData, isLoading } = useUserData();
+  const { channelData } = useUserData();
   const [channels, setChannels] = useState<ChannelData[]>([]);
   const [videoCount, setVideoCount] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const [selectAll, setSelectAll] = useState<boolean>(true);
   const [isLoadingMaker, setIsLoadingMaker] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [jobId, setJobId] = useState<string | null>(null);
-  const [progress, setProgress] = useState<number>(0);
-  const [isActive, setIsActive] = useState(false);
   const { setProgress: setProgressContext, setIsActive: setIsActiveContext } =
     useProgress();
+  const [_, setActiveJobId] = useState<string | null>(null);
 
   const clearMessages = useCallback(() => {
     setError(null);
@@ -69,6 +67,15 @@ export default function MakerPage() {
       localStorage.setItem("cachedChannels", JSON.stringify(channelList));
     }
   }, [channelData]);
+
+  useEffect(() => {
+    // Check for active job on mount
+    const storedJobId = localStorage.getItem("activeJobId");
+    if (storedJobId) {
+      setActiveJobId(storedJobId);
+      pollJobStatus(storedJobId);
+    }
+  }, []);
 
   const handleSelectAllChange = () => {
     const newSelectAll = !selectAll;
@@ -106,18 +113,22 @@ export default function MakerPage() {
         }
 
         const data = await response.json();
-        setProgressContext(data.progress); // Update the global progress
-        setIsActiveContext(true); // Show the progress bar
+        setProgressContext(data.progress);
+        setIsActiveContext(true);
 
-        if (data.status === "completed") {
-          setSuccessMessage("Videos generated successfully!");
-          setJobId(null);
-          setIsActiveContext(false); // Hide the progress bar
-          return;
-        } else if (data.status === "error") {
-          setError(data.error || "An error occurred during video generation");
-          setJobId(null);
-          setIsActiveContext(false); // Hide the progress bar
+        if (data.status === "completed" || data.status === "error") {
+          setSuccessMessage(
+            data.status === "completed"
+              ? "Videos generated successfully!"
+              : null
+          );
+          setError(
+            data.status === "error" ? data.error || "An error occurred" : null
+          );
+          // Clear the stored job ID when complete
+          localStorage.removeItem("activeJobId");
+          setActiveJobId(null);
+          setIsActiveContext(false);
           return;
         }
 
@@ -126,12 +137,13 @@ export default function MakerPage() {
       } catch (error) {
         console.error("Error polling job status:", error);
         setError("Failed to get job status");
-        setJobId(null);
-        setIsActiveContext(false); // Hide the progress bar
+        localStorage.removeItem("activeJobId");
+        setActiveJobId(null);
+        setIsActiveContext(false);
       }
     },
     [setProgressContext, setIsActiveContext]
-  ); // Add the context functions to dependencies
+  );
 
   const handleCreateVideos = async () => {
     const selectedChannels = channels
@@ -179,7 +191,6 @@ export default function MakerPage() {
       if (!response.ok) {
         if (response.status === 409) {
           const data = await response.json();
-          setJobId(data.jobId); // Set the existing job ID
           pollJobStatus(data.jobId); // Start polling for the existing job
           setError(
             "You already have an active job running. Showing its progress."
@@ -191,8 +202,10 @@ export default function MakerPage() {
       }
 
       const data = await response.json();
-      setJobId(data.jobId);
       setSuccessMessage("Job started successfully");
+      // Store the job ID when starting a new job
+      localStorage.setItem("activeJobId", data.jobId);
+      setActiveJobId(data.jobId);
       pollJobStatus(data.jobId);
     } catch (error) {
       console.error("Error creating videos:", error);

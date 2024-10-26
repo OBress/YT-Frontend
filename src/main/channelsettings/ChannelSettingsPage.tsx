@@ -147,7 +147,7 @@ export default function ChannelSettingsPage() {
     });
   };
 
-  const handleAddChannel = async (newChannelData: any) => {
+  const handleAddChannel = async () => {
     try {
       // Wait for the channel to be added
       await refreshData();

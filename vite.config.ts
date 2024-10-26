@@ -6,6 +6,16 @@ export default defineConfig({
   // Use conditional base URL
   base: process.env.NODE_ENV === 'production' ? '/YT-Frontend/' : '/',
   plugins: [react()],
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

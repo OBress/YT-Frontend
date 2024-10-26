@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import AnalyticsPage from "./analytics/AnalyticsPage";
 import ChannelSettingsPage from "./channelsettings/ChannelSettingsPage";
 import MakerPage from "./maker/MakerPage";

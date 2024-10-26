@@ -6,7 +6,6 @@ import { Save, Eye, EyeOff, ChevronDown, ChevronRight } from "lucide-react";
 import { DialogFooter, DialogContent } from "@/components/ui/dialog";
 import { sanitizeSettings } from "./channelsettings/channelSettingsUtils";
 import { useUserData } from "@/contexts/UserDataContext";
-import { Label } from "@/components/ui/label";
 import { fetchUserSettings } from "./channelsettings/channelSettingsUtils";
 
 interface SettingsPopupProps {

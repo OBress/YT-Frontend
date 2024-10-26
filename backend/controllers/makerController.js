@@ -24,6 +24,9 @@ function getUserActiveJob(userId) {
   return null;
 }
 
+// Add timeout for job cleanup
+const JOB_TIMEOUT = 1000 * 60 * 30; // 30 minutes
+
 export async function createVideos(req, res) {
   try {
     const { userId, channelNames, videoCount } = req.body;
@@ -90,6 +93,16 @@ export async function createVideos(req, res) {
       }
     });
 
+    // Add timeout to clean up completed/failed jobs
+    setTimeout(() => {
+      if (activeJobs.has(jobId)) {
+        const status = activeJobs.get(jobId);
+        if (status.status === 'completed' || status.status === 'error') {
+          activeJobs.delete(jobId);
+        }
+      }
+    }, JOB_TIMEOUT);
+
   } catch (error) {
     console.error('Error in createVideos:', error);
     res.status(500).json({ 
@@ -104,7 +117,11 @@ export async function getJobStatus(req, res) {
   const jobStatus = activeJobs.get(jobId);
   
   if (!jobStatus) {
-    return res.status(404).json({ error: 'Job not found' });
+    return res.status(404).json({ 
+      error: 'Job not found',
+      status: 'error',
+      progress: 0 
+    });
   }
   
   res.json(jobStatus);
