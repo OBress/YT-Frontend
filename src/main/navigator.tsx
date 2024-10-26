@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import SettingsPopup from "./settings";
 import { useUserData } from "@/contexts/UserDataContext";
+import { useProgress } from "@/contexts/ProgressContext";
 
 interface ChannelNavigatorProps {
   onLogout: () => void;
@@ -33,6 +34,7 @@ const ChannelNavigator: React.FC<ChannelNavigatorProps> = ({
   const [activeTab, setActiveTab] = useState("maker");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+  const { progress, isActive } = useProgress();
 
   useEffect(() => {
     document.documentElement.classList.add("dark");
@@ -184,6 +186,21 @@ const ChannelNavigator: React.FC<ChannelNavigatorProps> = ({
           </div>
         </DialogContent>
       </Dialog>
+      {isActive && (
+        <div className="fixed bottom-0 left-0 right-0 bg-background border-t z-50">
+          <div className="max-w-7xl mx-auto px-4 py-2">
+            <div className="w-full bg-secondary rounded-full h-2.5 dark:bg-secondary/50">
+              <div
+                className="bg-primary h-2.5 rounded-full transition-all duration-500"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <p className="text-sm text-center mt-1">
+              Processing Videos: {progress}%
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

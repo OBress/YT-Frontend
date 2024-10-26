@@ -14,6 +14,7 @@ import { Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { useUserData } from "@/contexts/UserDataContext";
+import { useProgress } from "@/contexts/ProgressContext";
 
 interface ChannelData {
   name: string;
@@ -35,6 +36,11 @@ export default function MakerPage() {
   const [selectAll, setSelectAll] = useState<boolean>(true);
   const [isLoadingMaker, setIsLoadingMaker] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [progress, setProgress] = useState<number>(0);
+  const [isActive, setIsActive] = useState(false);
+  const { setProgress: setProgressContext, setIsActive: setIsActiveContext } =
+    useProgress();
 
   const clearMessages = useCallback(() => {
     setError(null);
@@ -82,6 +88,51 @@ export default function MakerPage() {
     setSelectAll(updatedChannels.every((channel) => channel.isChecked));
   };
 
+  const pollJobStatus = useCallback(
+    async (jobId: string) => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(
+          `${import.meta.env.VITE_API_BASE_URL}/api/maker/job-status/${jobId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch job status");
+        }
+
+        const data = await response.json();
+        setProgressContext(data.progress); // Update the global progress
+        setIsActiveContext(true); // Show the progress bar
+
+        if (data.status === "completed") {
+          setSuccessMessage("Videos generated successfully!");
+          setJobId(null);
+          setIsActiveContext(false); // Hide the progress bar
+          return;
+        } else if (data.status === "error") {
+          setError(data.error || "An error occurred during video generation");
+          setJobId(null);
+          setIsActiveContext(false); // Hide the progress bar
+          return;
+        }
+
+        // Continue polling if job is still running
+        setTimeout(() => pollJobStatus(jobId), 2000);
+      } catch (error) {
+        console.error("Error polling job status:", error);
+        setError("Failed to get job status");
+        setJobId(null);
+        setIsActiveContext(false); // Hide the progress bar
+      }
+    },
+    [setProgressContext, setIsActiveContext]
+  ); // Add the context functions to dependencies
+
   const handleCreateVideos = async () => {
     const selectedChannels = channels
       .filter((channel) => channel.isChecked)
@@ -126,14 +177,23 @@ export default function MakerPage() {
       );
 
       if (!response.ok) {
+        if (response.status === 409) {
+          const data = await response.json();
+          setJobId(data.jobId); // Set the existing job ID
+          pollJobStatus(data.jobId); // Start polling for the existing job
+          setError(
+            "You already have an active job running. Showing its progress."
+          );
+          return;
+        }
         const errorText = await response.text();
         throw new Error(`HTTP error! status: ${response.status}. ${errorText}`);
       }
 
       const data = await response.json();
-      setSuccessMessage(
-        `Successfully queued ${videoCount} videos for ${selectedChannels.length} channel(s).`
-      );
+      setJobId(data.jobId);
+      setSuccessMessage("Job started successfully");
+      pollJobStatus(data.jobId);
     } catch (error) {
       console.error("Error creating videos:", error);
       setError(

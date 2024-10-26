@@ -10,12 +10,15 @@ import {
 import LoginPage from "./auth/login";
 import ChannelNavigator from "./main/navigator";
 import { UserDataProvider } from "./contexts/UserDataContext";
+import { ProgressProvider } from "./contexts/ProgressContext";
 
 function App() {
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <ProgressProvider>
+      <Router>
+        <AppContent />
+      </Router>
+    </ProgressProvider>
   );
 }
 
