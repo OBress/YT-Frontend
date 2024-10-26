@@ -21,15 +21,7 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  server: {
-    proxy: {
-      '/api': {
-        target: process.env.VITE_API_BASE_URL, // Replace with your backend server URL
-        changeOrigin: true,
-        secure: false,
-      }
-    }
-  },
+  server: {}, // Remove the proxy configuration
   css: {
     postcss: './postcss.config.js',
   },

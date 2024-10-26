@@ -40,6 +40,13 @@ export default function LoginPage({ setIsLoggedIn }: LoginPageProps) {
     e.preventDefault();
     setError("");
 
+    // Add these debug lines
+    console.log("Environment variable:", import.meta.env.VITE_API_BASE_URL);
+    console.log(
+      "Full URL:",
+      `${import.meta.env.VITE_API_BASE_URL}/api/auth/login`
+    );
+
     try {
       const response = await fetch(
         `${import.meta.env.VITE_API_BASE_URL}/api/auth/login`,

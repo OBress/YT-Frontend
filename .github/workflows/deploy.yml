@@ -25,7 +25,7 @@ jobs:
 
       - name: Build
         env:
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+          VITE_API_BASE_URL: "whatever-I-want"
         run: npm run build
 
       - name: Deploy

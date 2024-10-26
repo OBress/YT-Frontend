@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "cross-env VITE_API_BASE_URL=http://96.40.94.118:3001 vite",
     "build": "tsc && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
