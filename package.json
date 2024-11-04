@@ -4,12 +4,13 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "cross-env VITE_API_BASE_URL=http://96.40.94.118:3001 vite",
+    "dev": "cross-env NODE_ENV=development VITE_API_BASE_URL=https://localhost:3001 node backend/server.js",
     "build": "tsc && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist"
+    "deploy": "gh-pages -d dist",
+    "prod": "cross-env NODE_ENV=production VITE_API_BASE_URL=https://96.40.94.118:3001 node backend/server.js"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.1.2",
@@ -28,6 +29,8 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
+    "fs": "^0.0.1-security",
+    "https": "^1.0.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.452.0",
     "mongodb": "^6.9.0",
