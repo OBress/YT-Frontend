@@ -10,6 +10,8 @@ import authRoutes from './routes/authRoutes.js';
 import channelSettingsRouter from './routes/channelSettingsRoutes.js';
 import userSettingsRoutes from './routes/userSettingsRoutes.js';
 import makerRoutes from './routes/makerRoutes.js';
+import analyticsRoutes from './routes/analyticsRoutes.js';
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -29,26 +31,40 @@ app.use('/api/auth', authRoutes);
 app.use('/api/channel-settings', channelSettingsRouter);
 app.use('/api/user-settings', userSettingsRoutes);
 app.use('/api/maker', makerRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
-// Redirect HTTP to HTTPS
-app.use((req, res, next) => {
-  if (!req.secure) {
-    return res.redirect(['https://', req.get('Host'), req.url].join(''));
+// Modify the HTTPS server creation to be conditional
+let useHttps = false;
+try {
+  if (process.env.SSL_KEY_PATH && process.env.SSL_CERT_PATH) {
+    const httpsOptions = {
+      key: fs.readFileSync(process.env.SSL_KEY_PATH),
+      cert: fs.readFileSync(process.env.SSL_CERT_PATH)
+    };
+    
+    https.createServer(httpsOptions, app).listen(httpsPort, () => {
+      console.log(`HTTPS Server running on port ${httpsPort}`);
+    });
+    useHttps = true;
   }
-  next();
-});
+} catch (error) {
+  console.log('SSL certificates not found, running in HTTP-only mode');
+}
 
-// Create HTTPS server
-const httpsOptions = {
-  key: fs.readFileSync(process.env.SSL_KEY_PATH),
-  cert: fs.readFileSync(process.env.SSL_CERT_PATH)
-};
+// Only use HTTPS redirect middleware if HTTPS is enabled
+if (useHttps) {
+  app.use((req, res, next) => {
+    if (!req.secure) {
+      return res.redirect(['https://', req.get('Host'), req.url].join(''));
+    }
+    next();
+  });
+}
 
-https.createServer(httpsOptions, app).listen(httpsPort, () => {
-  console.log(`HTTPS Server running on port ${httpsPort}`);
-});
-
-// Optional HTTP server (for redirect)
+// HTTP server (now primary if HTTPS is not available)
 app.listen(port, () => {
   console.log(`HTTP Server running on port ${port}`);
+  if (!useHttps) {
+    console.log('Running in HTTP-only mode');
+  }
 });
