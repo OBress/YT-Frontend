@@ -22,6 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useUserData } from "@/contexts/UserDataContext";
 import { API_BASE_URL } from "@/config";
+import ReactDOM from "react-dom";
 
 export default function ChannelSettingsPage() {
   const { channelData, refreshData, isLoading } = useUserData();
@@ -37,6 +38,10 @@ export default function ChannelSettingsPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [channelsUpdated, setChannelsUpdated] = useState(0);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error" | "neutral";
+  } | null>(null);
 
   useEffect(() => {
     const storedUserId = localStorage.getItem("userId");
@@ -56,6 +61,13 @@ export default function ChannelSettingsPage() {
       setError(null);
     }
   }, [channelData, isLoading, userId]);
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => setNotification(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
 
   const handleSaveSettings = async (channelKey: string, newSettings: any) => {
     try {
@@ -80,7 +92,10 @@ export default function ChannelSettingsPage() {
       );
 
       if (response.status === 304) {
-        // console.log("No changes to save");
+        setNotification({
+          message: "No changes to save",
+          type: "neutral",
+        });
         return "not_modified";
       }
 
@@ -103,7 +118,10 @@ export default function ChannelSettingsPage() {
         localStorage.setItem("channelData", JSON.stringify(updatedChannelData));
       }
 
-      // console.log("Channel settings updated successfully");
+      setNotification({
+        message: "Channel settings updated successfully",
+        type: "success",
+      });
       setChannelsUpdated((prev) => prev + 1);
       return "modified";
     } catch (error) {
@@ -115,6 +133,10 @@ export default function ChannelSettingsPage() {
         errorMessage = error;
       }
       setError(errorMessage);
+      setNotification({
+        message: errorMessage,
+        type: "error",
+      });
       throw error;
     }
   };
@@ -150,12 +172,21 @@ export default function ChannelSettingsPage() {
 
   const handleAddChannel = async () => {
     try {
-      // Wait for the channel to be added
       await refreshData();
       setChannelsUpdated((prev) => prev + 1);
-      setError(null); // Clear any existing errors
+      setError(null);
+      setNotification({
+        message: "Channel added successfully",
+        type: "success",
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add channel");
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to add channel";
+      setError(errorMessage);
+      setNotification({
+        message: errorMessage,
+        type: "error",
+      });
     }
   };
 
@@ -191,9 +222,13 @@ export default function ChannelSettingsPage() {
       // Refresh data from server and update localStorage
       await refreshData();
 
+      setNotification({
+        message: "Channel deleted successfully",
+        type: "success",
+      });
       setDeleteChannelKey(null);
       setDeleteChannelInput("");
-      setChannelsUpdated((prev) => prev + 1); // Increment channelsUpdated
+      setChannelsUpdated((prev) => prev + 1);
       setIsDeleteDialogOpen(false);
     } catch (error) {
       console.error("Error deleting channel:", error);
@@ -202,6 +237,11 @@ export default function ChannelSettingsPage() {
           ? error.message
           : "An error occurred while deleting the channel"
       );
+      setNotification({
+        message:
+          error instanceof Error ? error.message : "Failed to delete channel",
+        type: "error",
+      });
     }
   };
 
@@ -333,6 +373,28 @@ export default function ChannelSettingsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {notification &&
+        ReactDOM.createPortal(
+          <div
+            className={`fixed left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-md bg-background border shadow-lg animate-fade-in-out ${
+              notification.type === "success"
+                ? "text-green-500"
+                : notification.type === "error"
+                ? "text-red-500"
+                : "text-gray-500"
+            }`}
+            style={{
+              position: "fixed",
+              bottom: "20px",
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 9999999,
+            }}
+          >
+            {notification.message}
+          </div>,
+          document.body
+        )}
     </Card>
   );
 }

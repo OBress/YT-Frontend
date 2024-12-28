@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { fetchPresets } from "./channelSettingsUtils";
 import { useUserData } from "@/contexts/UserDataContext";
+import { API_BASE_URL } from "@/config";
 
 export function ChannelAdder({
   onAddChannel,
@@ -71,23 +72,35 @@ export function ChannelAdder({
   }, [fetchPresetsData, channelsUpdated]);
 
   const handleAddChannel = async () => {
-    const newChannelData = {
-      id: newChannelName,
-      ...combinedPresets[selectedPreset],
-    };
-
     try {
-      const result = await handleSaveSettings(newChannelName, newChannelData);
-      if (result !== "not_modified") {
-        onAddChannel(newChannelData); // Triggers a refresh via channelsUpdated
-        setShowAddChannelModal(false);
-        setNewChannelName("");
-        setSelectedPreset("");
-        fetchPresetsData();
-        await refreshData(); // Ensure context refreshes data
-      } else {
-        console.error("Failed to add channel: No changes were made");
+      const token = localStorage.getItem("token");
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/channel-settings/${userId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            channelUrl: newChannelName,
+            newSettings: combinedPresets[selectedPreset],
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to add channel");
       }
+
+      onAddChannel(data.addedChannel);
+      setShowAddChannelModal(false);
+      setNewChannelName("");
+      setSelectedPreset("");
+      fetchPresetsData();
     } catch (error) {
       console.error("Error adding channel:", error);
     }
@@ -102,18 +115,21 @@ export function ChannelAdder({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add New Channel</DialogTitle>
-            <DialogDescription></DialogDescription>
+            <DialogDescription>
+              Enter the YouTube channel URL to add a new channel
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">
-                Name
+                Channel URL
               </Label>
               <Input
                 id="name"
                 value={newChannelName}
                 onChange={(e) => setNewChannelName(e.target.value)}
                 className="col-span-3"
+                placeholder="url of channel"
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">

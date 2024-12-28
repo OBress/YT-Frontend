@@ -1,4 +1,7 @@
 import { client } from '../config/database.js';
+import { google } from 'googleapis';
+
+
 
 export async function getChannelSettings(req, res) {
   try {
@@ -133,24 +136,141 @@ export async function deleteChannel(req, res) {
   }
 }
 
+async function extractChannelId(url, youtube) {
+  try {
+    const urlObj = new URL(url);
+    const pathname = urlObj.pathname;
+
+    // Handle @username format
+    if (pathname.startsWith('/@')) {
+      const username = pathname.slice(2); // Remove the '/@' prefix
+      // console.log('Searching for username:', username);
+      
+      // Search for the channel using the YouTube API
+      const searchResponse = await youtube.search.list({
+        part: 'id,snippet',
+        q: username,
+        type: 'channel',
+        maxResults: 1
+      });
+
+      // console.log('Search response:', searchResponse.data);
+
+      if (searchResponse.data.items && searchResponse.data.items.length > 0) {
+        const channelId = searchResponse.data.items[0].id.channelId;
+        // console.log('Found channel ID:', channelId);
+        return channelId;
+      }
+    }
+    
+    // Handle different YouTube URL formats
+    if (pathname.startsWith('/channel/')) {
+      return pathname.split('/channel/')[1];
+    } else if (pathname.startsWith('/@') || pathname.startsWith('/c/') || pathname.startsWith('/user/')) {
+      // Handle custom URLs by searching for the channel
+      const customUsername = pathname.split('/')[1].replace('@', '');
+      
+      // Search for the channel using the YouTube API
+      const searchResponse = await youtube.search.list({
+        part: 'snippet',
+        q: customUsername,
+        type: 'channel',
+        maxResults: 1
+      });
+
+      if (searchResponse.data.items && searchResponse.data.items.length > 0) {
+        return searchResponse.data.items[0].snippet.channelId;
+      }
+    } else if (searchParams.has('channel_id')) {
+      return searchParams.get('channel_id');
+    }
+    
+    console.log('No matching URL format found');
+    return null;
+  } catch (error) {
+    console.error('Error extracting channel ID:', error);
+    return null;
+  }
+}
+
 export async function addChannel(req, res) {
   try {
     const userId = req.params.userId;
-    const { channelKey, newSettings } = req.body;
+    const { channelUrl, newSettings } = req.body;
     const database = client.db('YouTube-Dashboard');
     const collection = database.collection('everything');
 
-    const result = await collection.updateOne(
-      { [userId]: { $exists: true } },
-      { $set: { [`${userId}.channels.${channelKey}`]: newSettings } },
-      { upsert: true }
-    );
-
-    if (result.upsertedCount === 0 && result.modifiedCount === 0) {
-      return res.status(304).json({ message: 'Channel not added or already exists' });
+    // First, fetch user settings to get their API key
+    const userDocument = await collection.findOne({ [userId]: { $exists: true } });
+    if (!userDocument || !userDocument[userId]['user-settings']) {
+      return res.status(404).json({ error: 'User settings not found' });
     }
 
-    res.json({ message: 'Channel added successfully', addedChannel: newSettings });
+    const apiKey = userDocument[userId]['user-settings']['youtube']['youtube-api-key'];
+    if (!apiKey) {
+      return res.status(400).json({ error: 'YouTube API key not found in user settings' });
+    }
+
+    // Initialize YouTube API with user's API key
+    const youtube = google.youtube({
+      version: 'v3',
+      auth: apiKey
+    });
+    
+    // Extract channel ID from URL
+    const channelId = await extractChannelId(channelUrl, youtube);
+    if (!channelId) {
+      return res.status(400).json({ error: 'Invalid YouTube channel URL or channel not found' });
+    }
+
+    // Fetch channel details from YouTube API
+    const response = await youtube.channels.list({
+      part: 'snippet',
+      id: channelId
+    });
+
+    if (!response.data.items || response.data.items.length === 0) {
+      return res.status(404).json({ error: 'YouTube channel not found' });
+    }
+
+    const channelName = response.data.items[0].snippet.title;
+    const channelKey = channelName;
+
+    // Check if channel already exists
+    const existingChannel = await collection.findOne({
+      [userId]: { $exists: true },
+      [`${userId}.channels.${channelKey}`]: { $exists: true }
+    });
+
+    if (existingChannel) {
+      return res.status(400).json({ error: 'Channel already exists' });
+    }
+
+    const result = await collection.updateOne(
+      { [userId]: { $exists: true } },
+      { 
+        $set: { 
+          [`${userId}.channels.${channelKey}`]: {
+            url: channelUrl,
+            ...newSettings,
+          }
+        } 
+      }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({ 
+      message: 'Channel added successfully', 
+      addedChannel: {
+        url: channelUrl,
+        ...newSettings,
+        channelId,
+        channelName
+      }
+    });
   } catch (error) {
     console.error('Error in addChannel:', error);
     res.status(500).json({ error: 'Internal server error', details: error.message });

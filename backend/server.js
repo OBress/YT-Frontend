@@ -12,7 +12,6 @@ import userSettingsRoutes from './routes/userSettingsRoutes.js';
 import makerRoutes from './routes/makerRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -22,7 +21,25 @@ const app = express();
 const port = process.env.PORT || 3001;
 const httpsPort = process.env.HTTPS_PORT || 3443;
 
-app.use(cors());
+// Configure CORS
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://localhost:5173',
+  'https://obress.github.io/YT-Frontend/'
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  }
+}));
+
 app.use(express.json());
 
 connectToDatabase();
@@ -33,25 +50,24 @@ app.use('/api/user-settings', userSettingsRoutes);
 app.use('/api/maker', makerRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
-// Modify the HTTPS server creation to be conditional
-let useHttps = false;
+// Conditional HTTPS server creation
+let useHttps = true;
 try {
-  if (process.env.SSL_KEY_PATH && process.env.SSL_CERT_PATH) {
-    const httpsOptions = {
-      key: fs.readFileSync(process.env.SSL_KEY_PATH),
-      cert: fs.readFileSync(process.env.SSL_CERT_PATH)
-    };
-    
-    https.createServer(httpsOptions, app).listen(httpsPort, () => {
-      console.log(`HTTPS Server running on port ${httpsPort}`);
-    });
-    useHttps = true;
-  }
+  const httpsOptions = {
+    key: fs.readFileSync('./certificates/private.key'),
+    cert: fs.readFileSync('./certificates/certificate.crt')
+  };
+  
+  https.createServer(httpsOptions, app).listen(httpsPort, () => {
+    console.log(`HTTPS Server running on port ${httpsPort}`);
+  });
 } catch (error) {
-  console.log('SSL certificates not found, running in HTTP-only mode');
+  console.error('SSL certificates not found:', error);
+  console.log('Running in HTTP-only mode');
+  useHttps = false;
 }
 
-// Only use HTTPS redirect middleware if HTTPS is enabled
+// Redirect HTTP to HTTPS if HTTPS is enabled
 if (useHttps) {
   app.use((req, res, next) => {
     if (!req.secure) {
@@ -61,7 +77,7 @@ if (useHttps) {
   });
 }
 
-// HTTP server (now primary if HTTPS is not available)
+// Start HTTP server if HTTPS is not used
 app.listen(port, () => {
   console.log(`HTTP Server running on port ${port}`);
   if (!useHttps) {

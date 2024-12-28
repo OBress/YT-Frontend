@@ -24,7 +24,7 @@ async function getYouTubeAnalytics(channelId, apiKey) {
       likes: parseInt(channelStats.likeCount) || 0,
       comments: parseInt(channelStats.commentCount) || 0,
       subscribers: parseInt(channelStats.subscriberCount) || 0,
-      timestamp: new Date()
+      timestamp: new Date().toISOString()
     };
   } catch (error) {
     console.error(`Error fetching YouTube analytics for channel ${channelId}:`, error);
@@ -73,7 +73,7 @@ export async function updateChannelAnalytics(req, res) {
         await collection.updateOne(
           { [userId]: { $exists: true } },
           { 
-            $set: { 
+            $push: { 
               [`${userId}.channels.${channelKey}.analytics`]: analytics 
             } 
           }
@@ -101,6 +101,63 @@ export async function updateChannelAnalytics(req, res) {
 
   } catch (error) {
     console.error('Error in updateChannelAnalytics:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+}
+
+export async function getChannelAnalyticsHistory(req, res) {
+  try {
+    const { userId, channelKey, period } = req.params; // period can be '1d', '7d', '30d', or 'all'
+    const database = client.db('YouTube-Dashboard');
+    const collection = database.collection('everything');
+
+    const userDoc = await collection.findOne({ [userId]: { $exists: true } });
+    if (!userDoc) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const channel = userDoc[userId].channels[channelKey];
+    if (!channel) {
+      return res.status(404).json({ error: 'Channel not found' });
+    }
+
+    const analytics = channel.analytics || [];
+    if (!Array.isArray(analytics)) {
+      return res.status(404).json({ error: 'No analytics history found' });
+    }
+
+    const now = new Date();
+    let cutoffDate;
+
+    switch (period) {
+      case '1d':
+        cutoffDate = new Date(now.setDate(now.getDate() - 1));
+        break;
+      case '7d':
+        cutoffDate = new Date(now.setDate(now.getDate() - 7));
+        break;
+      case '30d':
+        cutoffDate = new Date(now.setDate(now.getDate() - 30));
+        break;
+      case 'all':
+        cutoffDate = new Date(0); // Beginning of time
+        break;
+      default:
+        return res.status(400).json({ error: 'Invalid period specified' });
+    }
+
+    const filteredAnalytics = analytics.filter(entry => 
+      new Date(entry.timestamp) >= cutoffDate
+    );
+
+    res.json({
+      channelName: channel.name,
+      period,
+      analytics: filteredAnalytics
+    });
+
+  } catch (error) {
+    console.error(`Error getting channel analytics history:`, error);
     res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 }

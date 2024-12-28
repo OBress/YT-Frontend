@@ -38,13 +38,12 @@ export function UserDataProvider({ children }: { children: React.ReactNode }) {
         fetchChannelSettings(userId),
         fetchUserSettings(userId),
       ]);
-
+      // console.log("newChannelData", newChannelData);
       // Update state and cache
       if (newChannelData) {
         setChannelData(newChannelData);
         localStorage.setItem("channelData", JSON.stringify(newChannelData));
       }
-      console.log("newUserData", newUserData);
       if (newUserData) {
         setUserData(newUserData);
         localStorage.setItem("userData", JSON.stringify(newUserData));
@@ -64,6 +63,7 @@ export function UserDataProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     fetchAllData();
+    console.log("fetched all data");
   }, []);
 
   const refreshData = async () => {
