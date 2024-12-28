@@ -61,7 +61,7 @@ coverage/
 .stylelintcache
 
 # Backend-related (since you're only sharing frontend)
-# backend/
+backend/
 # server/
 # api/
 dbUtils/

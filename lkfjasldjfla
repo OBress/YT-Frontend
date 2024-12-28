@@ -1,0 +1,179 @@
+[33mcommit c605e3bb99c2e2004ffcec1c248794b2a736ff79[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: OBress <owen@bress.tv>
+Date:   Fri Dec 27 19:28:09 2024 -0500
+
+    updated readme
+
+[33mcommit 9ee506e75d66a1ac26d571cb1c04a633a0d811c0[m[33m ([m[1;31morigin/main[m[33m)[m
+Author: OBress <owen@bress.tv>
+Date:   Fri Dec 27 19:21:35 2024 -0500
+
+    adding images of site
+
+[33mcommit 0282c6aeb033c8fcb527e160b15837539a4faf5f[m[33m ([m[1;31morigin/analytics[m[33m, [m[1;32manalytics[m[33m)[m
+Author: OBress <owen@bress.tv>
+Date:   Thu Nov 7 22:57:20 2024 -0500
+
+    stable version
+
+[33mcommit c8bc3d43e5a5a7c278b3ea252862b917af100912[m
+Author: OBress <owen@bress.tv>
+Date:   Mon Nov 4 16:47:23 2024 -0500
+
+    update to readme
+
+[33mcommit a8a0c6f17816c323c272f5479872beb7437784e4[m
+Author: OBress <owen@bress.tv>
+Date:   Sat Oct 26 17:02:39 2024 -0400
+
+    update
+
+[33mcommit 9422320b01aeba6da836af3b9d5e2230b8371035[m
+Author: OBress <owen@bress.tv>
+Date:   Sat Oct 26 15:50:29 2024 -0400
+
+    https update
+
+[33mcommit d2cd68d40b42feda3b3dfbe562d3a66319bdebf8[m
+Author: OBress <owen@bress.tv>
+Date:   Sat Oct 26 00:17:17 2024 -0400
+
+    Configure GitHub Actions deployment
+
+[33mcommit 97de2287be4830a8b910d46ed57b7af2bb3b2d1f[m
+Author: OBress <owen@bress.tv>
+Date:   Sat Oct 26 00:02:03 2024 -0400
+
+    fixed login
+
+[33mcommit 7587c903f2222f8da706c750865ed473c29bd857[m
+Author: OBress <owen@bress.tv>
+Date:   Fri Oct 25 23:49:19 2024 -0400
+
+    fix
+
+[33mcommit 9d82ceaa6ce7729101bf80097eb6bf552af1438b[m[33m ([m[1;31morigin/local-caching[m[33m)[m
+Author: OBress <owen@bress.tv>
+Date:   Fri Oct 25 23:26:54 2024 -0400
+
+    added workflow
+
+[33mcommit 40cff0f6e71fb7b2c030b788e025224a2f32b626[m
+Author: OBress <owen@bress.tv>
+Date:   Fri Oct 25 22:53:09 2024 -0400
+
+    added progress bar and am testing
+
+[33mcommit 7d4ab5eec6a49d492213f169f1d67c6ffc1efc86[m
+Author: OBress <owen@bress.tv>
+Date:   Wed Oct 23 23:28:49 2024 -0400
+
+    local cache starting point
+
+[33mcommit c4dac3f3f8991fee360565a39a536805171dab19[m
+Author: OBress <owen@bress.tv>
+Date:   Wed Oct 23 22:05:32 2024 -0400
+
+    changed settings
+
+[33mcommit 7b9716e701a1b7181f90fcb031d864d56521f443[m
+Author: OBress <owen@bress.tv>
+Date:   Wed Oct 23 00:16:58 2024 -0400
+
+    fixed generate video api endpoint
+
+[33mcommit a0bb51cfb7beac40f6d09ac3e2a4d06476943895[m
+Author: OBress <owen@bress.tv>
+Date:   Wed Oct 23 00:00:25 2024 -0400
+
+    Started local caching and some other updates
+
+[33mcommit 1dfbe4b092f0661077060302be24f7b73889c2a8[m
+Author: OBress <owen@bress.tv>
+Date:   Mon Oct 21 14:10:26 2024 -0400
+
+    fixed presets
+
+[33mcommit 43f5ab62cec2eb847474dff5d675a8a4552f57db[m
+Author: OBress <owen@bress.tv>
+Date:   Sat Oct 19 14:44:41 2024 -0400
+
+    updated database named
+
+[33mcommit 5dc62d6558c83b64b1c2453f630a644203279e56[m
+Author: OBress <owen@bress.tv>
+Date:   Sat Oct 19 14:16:20 2024 -0400
+
+    improved functionality of settings
+
+[33mcommit d17cbfb55a39bb62713f87452dd44c237e485196[m
+Author: OBress <owen@bress.tv>
+Date:   Tue Oct 15 17:54:57 2024 -0400
+
+    added ability to change channel settings and save the data with notifciation popping up telling you that it worked.
+
+[33mcommit ef68e4b5c680c21fafabb7065270464c5e034e6b[m
+Author: OBress <owen@bress.tv>
+Date:   Tue Oct 15 13:43:42 2024 -0400
+
+    made authentication all server side and made backend cleaner
+
+[33mcommit c5e3940c9bc5db6c4fcb20fd46ce6ce84641c0ab[m
+Author: OBress <owen@bress.tv>
+Date:   Tue Oct 15 10:58:40 2024 -0400
+
+    fixed server
+
+[33mcommit 226ce9c8d9c3fe3433a457d9d3c87e54abf7a21a[m
+Author: OBress <owen@bress.tv>
+Date:   Tue Oct 15 10:35:07 2024 -0400
+
+    updated example .env
+
+[33mcommit f2c75725e448fe2d86c2072dda7ead0268c496e1[m
+Author: OBress <owen@bress.tv>
+Date:   Tue Oct 15 10:33:31 2024 -0400
+
+    security
+
+[33mcommit 8414c466666b9a0e742ac5dff3cd4ad5858046c3[m
+Author: OBress <owen@bress.tv>
+Date:   Mon Oct 14 23:56:55 2024 -0400
+
+    added functionality with mongodb but still have bug with video settings ui
+
+[33mcommit bfd652675e21fc7ab59a41644320c03fe897473b[m
+Author: OBress <owen@bress.tv>
+Date:   Mon Oct 14 00:20:41 2024 -0400
+
+    added more users in .env loggin
+
+[33mcommit 0c58c16c655d2930100f4d439e709b1d225d2fdb[m
+Author: OBress <owen@bress.tv>
+Date:   Sun Oct 13 23:47:41 2024 -0400
+
+    added settings button and fixed some other functionality
+
+[33mcommit 339faac96e13607a1ec9e9353ac885a0457c7c11[m
+Author: OBress <owen@bress.tv>
+Date:   Sun Oct 13 23:29:34 2024 -0400
+
+    added light/dark mode as well as better mobile support
+
+[33mcommit a8b03567f8c1dff3b27a7ff555f9fa1bc11a2ab2[m
+Author: OBress <owen@bress.tv>
+Date:   Sun Oct 13 22:53:52 2024 -0400
+
+    added Maker tab and top bar
+
+[33mcommit 78f6e58226980194c44f2901b36aff2ead637ab5[m
+Author: OBress <owen@bress.tv>
+Date:   Sun Oct 13 16:18:13 2024 -0400
+
+    changes to readme
+
+[33mcommit 65990170bacf0fcbccd934055ad943890d535663[m[33m ([m[1;32mmaster[m[33m)[m
+Author: OBress <owen@bress.tv>
+Date:   Sun Oct 13 16:15:47 2024 -0400
+
+    Initial commit
