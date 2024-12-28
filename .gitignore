@@ -5,6 +5,7 @@ certificates/
 *.crt
 *.pem
 
+backend/
 # Logs
 logs
 *.log
