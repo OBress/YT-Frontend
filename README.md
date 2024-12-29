@@ -2,6 +2,8 @@
 
 Personal project to make a dashboard to manage my automated youtube channels for myself and others.
 
+Made with React, Tailwind and Express. Uses MongoDB on the backend and component library shadcn.
+
 ---
 
 ## Login
